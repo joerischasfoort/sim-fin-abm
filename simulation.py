@@ -9,6 +9,7 @@ parameters = {
     "n_traders": 5000,
     "ticks": 1000,
     "fundamental_value": 100,
+    "std_fundamental": 0.1,
     "std_noise": 0.01,
     "std_vol": 4,
     "max_order_expiration_ticks": 30,

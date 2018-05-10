@@ -30,6 +30,7 @@ class LimitOrderBook:
         self.tick_close_price = [np.mean([self.highest_bid_price, self.lowest_ask_price])]
         self.tick_bid_depth = []
         self.tick_ask_depth = []
+        self.fundamental = []
 
     def add_bid(self, price, volume, agent):
         """Add a bid to the (price low-high, age young-old) sorted bids book"""

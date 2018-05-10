@@ -7,15 +7,18 @@ def sim_fin_model(traders, orderbook, parameters, seed=1):
     """The main model function"""
     random.seed(seed)
     np.random.seed(seed)
+    fundamental = [parameters["fundamental_value"]]
 
     for tick in range(parameters['av_return_interval_max'] + 1, parameters["ticks"]):
+        # evolve the fundamental value via AR(1) process
+        fundamental.append(fundamental[-1] + parameters["std_fundamental"] * np.random.randn())
 
         # select active traders
         active_traders = [traders[np.random.randint(1, len(traders))]]
 
         # update common price components
         mid_price = orderbook.tick_close_price[-1]
-        fundamental_component = np.log(parameters['fundamental_value'] / mid_price)
+        fundamental_component = np.log(fundamental[-1] / mid_price)
         noise_component = parameters['std_noise'] * np.random.randn()
         chartist_component = np.cumsum(orderbook.returns[-parameters['av_return_interval_max']:]
                                        ) / np.arange(1., float(parameters['av_return_interval_max'] + 1))
@@ -45,5 +48,6 @@ def sim_fin_model(traders, orderbook, parameters, seed=1):
                 break
 
         orderbook.cleanse_book()
+        orderbook.fundamental = fundamental
 
     return traders, orderbook
