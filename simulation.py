@@ -7,24 +7,22 @@ from simfinmodel import *
 parameters = {
     # global parameters
     "n_traders": 5000,
+    "trader_sample_size": 3,
     "ticks": 1000,
     "fundamental_value": 100,
-    "std_fundamental": 0.1,
-    "std_noise": 0.01,
+    "std_fundamental": 0.08,
+    "std_noise": 0.05,
     "std_vol": 4,
-    "max_order_expiration_ticks": 30,
+    "max_order_expiration_ticks": 50,
     # trader parameters
     "w_fundamentalists": 0.0,
-    "w_momentum": 0.0,
-    "w_random": 0.0,
-    "w_mean_reversion": 1.0,
-    "w_buy_hold": 0.0,
-    "spread_max": 0.004087, # from Riordann & Storkenmaier 2012
-    # initial values
-    "horizon_min": 1,
-    "horizon_max": 4,
-    "av_return_interval_max": 4,
-    "init_spread": (1, 1),
+    "w_momentum": 80.0,
+    "w_random": 20.0,
+    "w_mean_reversion": 0.0,
+    "w_buy_hold": 10.0,
+    "spread_max": 0.15,
+    "horizon_min": 2,
+    "horizon_max": 8,
 }
 
 # 2 initalise model objects

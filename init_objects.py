@@ -23,7 +23,7 @@ def init_objects(parameters):
         lft_expectations = TraderExpectations(parameters['fundamental_value'])
         traders.append(Trader(idx, lft_vars, lft_params, lft_expectations))
 
-    orderbook = LimitOrderBook(parameters['fundamental_value'], parameters["init_spread"],
+    orderbook = LimitOrderBook(parameters['fundamental_value'], parameters["spread_max"],
                                parameters['horizon_max'], parameters['max_order_expiration_ticks'])
 
     return traders, orderbook

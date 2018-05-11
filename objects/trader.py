@@ -33,8 +33,6 @@ class TraderParameters:
     Holds the the trader parameters
     """
     def __init__(self, horizon_min, horizon_max, max_spread):
-        self.horizon_min = horizon_min
-        self.horizon_max = horizon_max
         self.horizon = np.random.randint(horizon_min, horizon_max)
         self.spread = max_spread * np.random.rand()
 
