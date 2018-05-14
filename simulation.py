@@ -20,7 +20,7 @@ parameters = {
     "w_random": 20.0,
     "w_mean_reversion": 0.0,
     "w_buy_hold": 10.0,
-    "spread_max": 0.15,
+    "spread_max": 0.15, #TODO investigae if this is correct & change in paper
     "horizon_min": 2,
     "horizon_max": 8,
 }
