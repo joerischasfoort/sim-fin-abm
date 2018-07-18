@@ -3,8 +3,10 @@ import random
 import bisect
 import numpy as np
 import simfinmodel
+import init_objects
 from functions.stylizedfacts import *
 from statistics import mean
+from functions.helpers import hurst
 
 
 def average_fitness(population):
@@ -22,7 +24,7 @@ def cost_function(observed_values, average_simulated_values):
     return score
 
 
-def evolve_population(population, fittest_to_retain, random_to_retain, parents_to_mutate, parameters_to_mutate, problem):
+def evolve_population(population, fittest_to_retain, random_to_retain, parents_to_mutate, parameters_to_mutate, problem): #TODO change
     """
     Evolves a population. First, the fittest members of the population plus some random individuals become parents.
     Then, some random mutations take place in the parents. Finally, the parents breed to create children.
@@ -44,7 +46,7 @@ def evolve_population(population, fittest_to_retain, random_to_retain, parents_t
     if not parents:
         raise ValueError('There are no parents, so evolution cannot take place')
 
-    # 3 mutate random parameters of random individuals
+    # 3 mutate random parameters of random individuals TODO add here to only mutate mutable parameters
     amount_of_individuals_to_mutate = int(parents_to_mutate * len(parents))
     amount_of_params_to_mutate = int(parameters_to_mutate * len(parents[0].parameters))
     for parent in random.sample(parents, amount_of_individuals_to_mutate):
@@ -77,9 +79,9 @@ def evolve_population(population, fittest_to_retain, random_to_retain, parents_t
     return parents
 
 
-def simulate_population(population, number_of_runs, simulation_time, number_of_agents, init_tot_money, init_profit, init_discount_rate, stylized_facts_real_life):
+def simulate_population(population, NRUNS, stylized_facts_real_life): #TODO debug
     """
-    Simulate a population of parameter spaces for the stock market model
+    Simulate a population of parameter spaces for the sim-fin model
     :param population: population of parameter spaces used to simulate model
     :param number_of_runs: number of times the simulation should be run
     :param simulation_time: amount of days which will be simulated for each run
@@ -88,95 +90,46 @@ def simulate_population(population, number_of_runs, simulation_time, number_of_a
     simulated_population = []
     for idx, individual in enumerate(population):
         parameters = individual.parameters
-        stylized_facts = [[], [], [], [], []]
-
-        # identify parameters
-        share_chartists = parameters[0]
-        share_mean_reversion = parameters[1]
-        order_expiration_time = parameters[2]
-        agent_order_price_variability = parameters[3]
-        agent_order_variability = parameters[4]
-        agent_ma_short = parameters[5]
-        agent_ma_long = parameters[6]
-        agents_hold_thresholds = parameters[7]
-        agent_volume_risk_aversion = parameters[8]
-        agent_propensity_to_switch = parameters[9]
-        profit_announcement_working_days = parameters[10]
-        price_to_earnings_base = parameters[11]
-        price_to_earnings_heterogeneity = parameters[12]
-        price_to_earnings_gap = parameters[13]
-        longMA_heterogeneity = parameters[14]
-        shortMA_heterogeneity = parameters[15]
-        shortMA_memory_divider = parameters[16]
-        PE_low_low = price_to_earnings_base
-        PE_low_high = int(price_to_earnings_heterogeneity * price_to_earnings_base)
-        PE_high_low = PE_low_high + price_to_earnings_gap
-        PE_high_high = int(price_to_earnings_heterogeneity * PE_high_low)
+        stylized_facts = {'autocorrelation': np.inf, 'kurtosis': np.inf, 'autocorrelation_abs': np.inf,
+                          'hurst': np.inf, 'hurst_dev_from_fund': np.inf}
 
         # simulate the model
-        for seed in range(number_of_runs):
-            agents, firms, stocks, order_books = baselinemodel.stockMarketSimulation(seed=seed,
-                                                                                     simulation_time=simulation_time,
-                                                                                     init_backward_simulated_time=int(
-                                                                                         agent_ma_long * longMA_heterogeneity),
-                                                                                     number_of_agents=number_of_agents,
-                                                                                     share_chartists=share_chartists,
-                                                                                     share_mean_reversion=share_mean_reversion,
-                                                                                     amount_of_firms=1,
-                                                                                     initial_total_money=(
-                                                                                         init_tot_money,
-                                                                                     int(init_tot_money * 1.1)),
-                                                                                     initial_profit=(
-                                                                                     init_profit, init_profit),
-                                                                                     discount_rate=init_discount_rate,
-                                                                                     init_price_to_earnings_window=(
-                                                                                     (PE_low_low,
-                                                                                      PE_low_high),
-                                                                                     (PE_high_low,
-                                                                                      PE_high_high)),
-                                                                                     order_expiration_time=order_expiration_time,
-                                                                                     agent_order_price_variability=(
-                                                                                     agent_order_price_variability,
-                                                                                     agent_order_price_variability),
-                                                                                     agent_order_variability=agent_order_variability,
-                                                                                     agent_ma_short=(agent_ma_short,
-                                                                                                     int(
-                                                                                                         agent_ma_short * shortMA_heterogeneity)),
-                                                                                     agent_ma_long=(agent_ma_long, int(
-                                                                                         agent_ma_long * longMA_heterogeneity)),
-                                                                                     agents_hold_thresholds=(
-                                                                                     1 - agents_hold_thresholds,
-                                                                                     1 + agents_hold_thresholds),
-                                                                                     agent_volume_risk_aversion=agent_volume_risk_aversion,
-                                                                                     agent_propensity_to_switch=agent_propensity_to_switch,
-                                                                                     firm_profit_mu=0.058,
-                                                                                     firm_profit_delta=0.00396825396,
-                                                                                     firm_profit_sigma=0.125,
-                                                                                     profit_announcement_working_days=profit_announcement_working_days,
-                                                                                     mean_reversion_memory_divider=4,
-                                                                                     printProgress=False,
-                                                                                     )
-            # store simulated stylized facts
-            sim_returns = calculate_returns(order_books[0].transaction_prices_history)
-            sim_volume = []
-            for day in order_books[0].transaction_volumes_history[1:]:
-                sim_volume.append(sum(day))
-            stylized_facts[0].append(autocorrelation_returns(sim_returns, 25))
-            stylized_facts[1].append(kurtosis(sim_returns))
-            stylized_facts[2].append(autocorrelation_abs_returns(sim_returns, 25))
-            stylized_facts[3].append(hurst(sim_returns, lag1=2, lag2=20))
-            stylized_facts[4].append(correlation_volume_volatility(sim_volume, sim_returns, window=10))
+        #traders = []
+        obs = []
+        for seed in range(NRUNS):
+            traders, orderbook = init_objects.init_objects(parameters, seed)
+            traders, orderbook = simfinmodel.sim_fin_model(traders, orderbook, parameters, seed)
+            # traders.append(traders)
+            obs.append(orderbook)
 
-            # create next generation individual
+            # store simulated stylized facts
+            mc_prices, mc_returns, mc_autocorr_returns, mc_autocorr_abs_returns, mc_volatility, mc_volume, mc_fundamentals = organise_data(
+                obs)
+            mc_dev_fundaments = mc_prices - mc_fundamentals
+
+            mean_kurtosis = []
+            long_memory = []
+            long_memory_deviation_fundamentals = []
+            for col in mc_returns:
+                kurtosis = mc_returns[col][2:].kurtosis()
+                lm = hurst(mc_prices[col][2:])
+                mean_kurtosis.append(kurtosis)
+                long_memory.append(lm)
+                long_memory_deviation_fundamentals.append(hurst(mc_dev_fundaments[col][2:]))
+
+            stylized_facts['autocorrelation'] = mc_autocorr_returns.mean(axis=1)
+            stylized_facts['kurtosis'] = np.mean(mean_kurtosis)
+            stylized_facts['autocorrelation_abs'] = mc_autocorr_abs_returns.mean(axis=1)
+            stylized_facts['hurst'] = np.mean(lm)
+            stylized_facts['hurst_dev_from_fund'] = np.mean(long_memory_deviation_fundamentals)
+
+        # create next generation individual
         next_gen_individual = Individual(parameters, [], np.inf)
         # add average stylized facts to individual
         for s_fact in stylized_facts:
-            next_gen_individual.stylized_facts.append(mean(s_fact))
+            next_gen_individual.stylized_facts.append(mean(stylized_facts[s_fact]))
         # add average fitness to individual
         next_gen_individual.cost = cost_function(stylized_facts_real_life, next_gen_individual.stylized_facts)
-        # set any non_volume simulation cost to infinity
-        if np.isnan(next_gen_individual.cost):
-            next_gen_individual.cost = np.inf
         # insert into next generation population, lowest score to the left
         bisect.insort_left(simulated_population, next_gen_individual)
 

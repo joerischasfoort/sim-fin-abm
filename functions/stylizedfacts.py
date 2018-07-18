@@ -86,6 +86,7 @@ def autocorrelation_returns(returns, lags):
     average_autocorrelation = np.mean(autocorr_returns[1:])
     return average_autocorrelation
 
+
 def kurtosis(returns):
     """
     Calculates the kurtosis in a time series of returns
@@ -94,6 +95,7 @@ def kurtosis(returns):
     """
     series_returns = pd.Series(returns)
     return series_returns.kurtosis()
+
 
 def autocorrelation_abs_returns(returns, lags):
     """
@@ -107,20 +109,6 @@ def autocorrelation_abs_returns(returns, lags):
     autocorr_abs_returns = [absolute_returns.autocorr(lag=lag) for lag in range(lags)]
     return np.mean(autocorr_abs_returns[1:])
 
-def hurst(price_series, lag1, lag2):
-    """
-    Calculates a measure of long memory, the hurst exponent
-    This is an adaption from:
-    https://robotwealth.com/demystifying-the-hurst-exponent-part-1/
-    """
-    # first remove any missing values from the price series
-    price_series = price_series.dropna()
-
-    lags = range(lag1, lag2)
-    std_differences = [np.sqrt(np.std(np.subtract(price_series[lag:], price_series[:-lag]))) for lag in lags]
-    m = np.polyfit(np.log(lags), np.log(std_differences), 1)
-    hurst = m[0]*2.0
-    return hurst
 
 def correlation_volume_volatility(volume, returns, window):
     """

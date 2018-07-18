@@ -20,13 +20,13 @@ parameters = {
     "w_random": 10.0,
     "w_mean_reversion": 80.0,
     "w_buy_hold": 10.0,
-    "spread_max": 0.05, # TODO investigate if this spread is correct
+    "spread_max": 0.05,
     "horizon_min": 2,
     "horizon_max": 8,
 }
 
 # 2 initalise model objects
-traders, orderbook = init_objects(parameters)
+traders, orderbook = init_objects(parameters, seed=1)
 
 # 3 simulate model
 traders, orderbook = sim_fin_model(traders, orderbook, parameters, seed=1)

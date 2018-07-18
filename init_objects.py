@@ -2,12 +2,14 @@ from objects.trader import *
 from objects.orderbook import *
 
 
-def init_objects(parameters):
+def init_objects(parameters, seed):
     """
     Function to initialise the model agentss
     :param parameters: object which holds all model parameters
     :return: list of agents
     """
+    np.random.seed(seed)
+
     traders = []
     n_traders = parameters["n_traders"]
 
