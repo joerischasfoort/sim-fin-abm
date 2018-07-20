@@ -77,7 +77,6 @@ def evolve_population(population, fittest_to_retain, random_to_retain, parents_t
             male = parents[male]
             female = parents[female]
             half = int(len(male.parameters) / 2)
-            # use the problem['names'] here to find the correct parameters TODO shuffle parameters
             child_parameters = {}
             param_names = random.sample(problem['names'], len(problem['names']))
             male_params = param_names[:half]
@@ -87,11 +86,10 @@ def evolve_population(population, fittest_to_retain, random_to_retain, parents_t
             female_params = param_names[half:]
             for key in female_params:
                 child_parameters[key] = female.parameters[key]
-            #child_parameters = male.parameters[:half] + female.parameters[half:]
             child = Individual(child_parameters, [], np.inf)
             children.append(child)
     parents.extend(children)
-    # the parents list now contains a full new population with the parents and their offspring
+    # the new parents list is now a new population with the parents and their offspring
     return parents
 
 
@@ -112,7 +110,7 @@ def simulate_population(population, NRUNS, fixed_parameters, stylized_facts_real
         params.update(parameters)
 
         stylized_facts = {'autocorrelation': np.inf, 'kurtosis': np.inf, 'autocorrelation_abs': np.inf,
-                          'hurst': np.inf, 'hurst_dev_from_fund': np.inf}
+                          'hurst': np.inf, 'av_dev_from_fund': np.inf}
 
         # simulate the model
         #traders = []
@@ -125,29 +123,32 @@ def simulate_population(population, NRUNS, fixed_parameters, stylized_facts_real
 
         # store simulated stylized facts
         mc_prices, mc_returns, mc_autocorr_returns, mc_autocorr_abs_returns, mc_volatility, mc_volume, mc_fundamentals = organise_data(obs)
-        mc_dev_fundaments = mc_prices - mc_fundamentals
+        mc_dev_fundamentals = (mc_prices - mc_fundamentals) / mc_fundamentals
 
         mean_autocor = []
         mean_autocor_abs = []
         mean_kurtosis = []
         long_memory = []
-        long_memory_deviation_fundamentals = []
+        #long_memory_deviation_fundamentals = []
+        av_deviation_fundamental = []
         for col in mc_returns:
             mean_autocor.append(np.mean(mc_autocorr_returns[col][1:])) #correct?
             mean_autocor_abs.append(np.mean(mc_autocorr_abs_returns[col][1:]))
             mean_kurtosis.append(mc_returns[col][2:].kurtosis())
             long_memory.append(hurst(mc_prices[col][2:]))
-            long_memory_deviation_fundamentals.append(hurst(mc_dev_fundaments[col][2:]))
+            av_deviation_fundamental.append(np.mean(mc_dev_fundamentals[col][1:]))
+            #long_memory_deviation_fundamentals.append(hurst(mc_dev_fundaments[col][2:]))
 
-        stylized_facts['autocorrelation'] = np.mean(mean_autocor) # TODO correct?
+
+        #stylized_facts['autocorrelation'] = np.mean(mean_autocor)
         stylized_facts['kurtosis'] = np.mean(mean_kurtosis)
-        stylized_facts['autocorrelation_abs'] = np.mean(mean_autocor_abs) #TODO correct?
+        stylized_facts['autocorrelation_abs'] = np.mean(mean_autocor_abs)
         stylized_facts['hurst'] = np.mean(long_memory)
-        stylized_facts['hurst_dev_from_fund'] = np.mean(long_memory_deviation_fundamentals)
+        stylized_facts['av_dev_from_fund'] = np.mean(av_deviation_fundamental)
 
         # create next generation individual
-        cost = cost_function(stylized_facts_real_life, stylized_facts) # TODO debug
-        next_gen_individual = Individual(parameters, stylized_facts, cost) # TODO check if no copy mistakes
+        cost = cost_function(stylized_facts_real_life, stylized_facts)
+        next_gen_individual = Individual(parameters, stylized_facts, cost)
         # insert into next generation population, lowest score (best) to the left
         bisect.insort_left(simulated_population, next_gen_individual)
 

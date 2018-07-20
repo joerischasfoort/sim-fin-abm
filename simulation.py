@@ -6,23 +6,23 @@ from simfinmodel import *
 # 1 setup parameters
 parameters = {
     # global parameters set through evolutionary algorithm calibration
-    "n_traders": 5000,
-    "ticks": 20,
-    "trader_sample_size": 26,
+    "n_traders": 1309,
+    "ticks": 1000,
+    "trader_sample_size": 21,
     "fundamental_value": 100,
-    "std_fundamental": 0.10872321803799265,
-    "std_noise": 0.20508407891045205,
-    "std_vol": 1,
-    "max_order_expiration_ticks": 50,
+    "std_fundamental": 0.08317728524869135,
+    "std_noise": 0.05633716087190844,
+    "std_vol": 5,
+    "max_order_expiration_ticks": 18,
     # trader parameters
-    "w_fundamentalists": 76.66646857709344,
-    "w_momentum": 47.53421946123167,
+    "w_fundamentalists": 20.84484458217016,
+    "w_momentum": 58.107737854582844,
     "w_random": 1.4948772502086316,
-    "w_mean_reversion": 65.01917050983388,
-    "w_buy_hold": 10.0,
-    "spread_max": 0.040136915087013045,
-    "horizon_min": 6,
-    "horizon_max": 15,
+    "w_mean_reversion": 69.1289833734435,
+    "w_buy_hold": 0.0,
+    "spread_max": 0.044494473036647685,
+    "horizon_min": 7,
+    "horizon_max": 11,
 }
 
 # 2 initalise model objects
