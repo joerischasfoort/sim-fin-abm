@@ -51,7 +51,7 @@ def organise_data(obs):
         # close price
         close_price.append(ob.tick_close_price[burn_in_period:])
         # returns
-        r = pd.Series(np.array(ob.tick_close_price)).pct_change()
+        r = pd.Series(np.array(ob.tick_close_price[burn_in_period:])).pct_change()
         returns.append(r)
         # autocorrelation returns
         ac_r = [r.autocorr(lag=lag) for lag in range(25)]
