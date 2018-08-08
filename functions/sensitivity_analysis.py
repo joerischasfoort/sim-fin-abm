@@ -56,3 +56,44 @@ def simulate_params_sobol(NRUNS, parameter_set, fixed_parameters):
 
     return stylized_facts
 
+
+def m_core_sim_run(parameters):
+    """
+    Run the simulation once with a set of parameters. Can be used to run on multiple cores
+    :param NRUNS: integer number of runs to simulate the model for one instance of parameters
+    :param parameters: dictionary of parameters
+    :return:
+    """
+    stylized_facts = {'autocorrelation': [], 'kurtosis': [], 'autocorrelation_abs': [],
+                      'hurst': [], 'av_dev_from_fund': []}
+
+    obs = []
+    for seed in range(5): # TODO amount of RUNS hardcoded
+        traders, orderbook = init_objects.init_objects(parameters, seed)
+        traders, orderbook = simfinmodel.sim_fin_model(traders, orderbook, parameters, seed)
+        obs.append(orderbook)
+
+    # store simulated stylized facts
+    mc_prices, mc_returns, mc_autocorr_returns, mc_autocorr_abs_returns, mc_volatility, mc_volume, mc_fundamentals = organise_data(
+        obs)
+    mc_dev_fundamentals = (mc_prices - mc_fundamentals) / mc_fundamentals
+
+    mean_autocor = []
+    mean_autocor_abs = []
+    mean_kurtosis = []
+    long_memory = []
+    av_deviation_fundamental = []
+    for col in mc_returns:
+        mean_autocor.append(np.mean(mc_autocorr_returns[col][1:]))  # correct?
+        mean_autocor_abs.append(np.mean(mc_autocorr_abs_returns[col][1:]))
+        mean_kurtosis.append(mc_returns[col][2:].kurtosis())
+        long_memory.append(hurst(mc_prices[col][2:]))
+        av_deviation_fundamental.append(np.mean(mc_dev_fundamentals[col][1:]))
+
+    stylized_facts['autocorrelation'] = (np.mean(mean_autocor))
+    stylized_facts['kurtosis'] = (np.mean(mean_kurtosis))
+    stylized_facts['autocorrelation_abs'] = (np.mean(mean_autocor_abs))
+    stylized_facts['hurst'] = (np.mean(long_memory))
+    stylized_facts['av_dev_from_fund']= (np.mean(av_deviation_fundamental))
+
+    return stylized_facts
