@@ -6,6 +6,8 @@ import simfinmodel
 import init_objects
 from functions.stylizedfacts import *
 from statistics import mean
+from functions.sensitivity_analysis import m_core_sim_run
+from multiprocessing import Pool
 from functions.helpers import *
 
 
@@ -25,8 +27,12 @@ def cost_function(observed_values, average_simulated_values):
     """
     score = 0
     for key in observed_values:
-        score += ((observed_values[key] - average_simulated_values[key]) / observed_values[key])**2
-    return score
+        score += np.true_divide((observed_values[key] - average_simulated_values[key]), observed_values[key])**2
+
+    if np.isnan(score):
+        return np.inf
+    else:
+        return score
 
 
 def evolve_population(population, fittest_to_retain, random_to_retain, parents_to_mutate, parameters_to_mutate, problem): #TODO change
@@ -93,7 +99,7 @@ def evolve_population(population, fittest_to_retain, random_to_retain, parents_t
     return parents
 
 
-def simulate_population(population, NRUNS, fixed_parameters, stylized_facts_real_life): #TODO debug
+def simulate_population(population, NRUNS, fixed_parameters, stylized_facts_real_life):
     """
     Simulate a population of parameter spaces for the sim-fin model
     :param population: population of parameter spaces used to simulate model
