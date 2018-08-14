@@ -18,10 +18,10 @@ problem = {
             'std_vol', 'max_order_expiration_ticks', 'w_fundamentalists', 'w_momentum',
            'w_random', 'w_mean_reversion', 'spread_max',
            'horizon_min', 'horizon_max'],
-  'bounds': [[1, 30], [0.05, 0.30],
+  'bounds': [[3, 30], [0.05, 0.30],
              [1, 20], [10, 100], [0.0, 100.0], [0.0, 100.0],
              [1.0, 100.0], [0.0, 100.0], [0.01, 0.15], # change mean reversion to 100.0
-             [1, 8], [9, 30]]
+             [3, 8], [9, 30]]
 }
 
 problem_no_mean_reversion = {
@@ -30,10 +30,10 @@ problem_no_mean_reversion = {
             'std_vol', 'max_order_expiration_ticks', 'w_fundamentalists', 'w_momentum',
            'w_random', 'spread_max',
            'horizon_min', 'horizon_max'],
-  'bounds': [[1, 30], [0.05, 0.30],
+  'bounds': [[3, 30], [0.05, 0.30],
              [1, 20], [10, 100], [0.0, 100.0], [0.0, 100.0],
-             [0.0, 100.0], [0.01, 0.15],
-             [1, 8], [9, 30]]
+             [1.0, 100.0], [0.01, 0.15],
+             [3, 8], [9, 30]]
 }
 
 population_size = 500
@@ -84,14 +84,14 @@ av_pop_fitness_no_mean_reversion = []
 
 # fixed parameters
 fixed_parameters = {"ticks": 1000, "fundamental_value": 396, "w_buy_hold": 0.0,
-                    'n_traders': 1000, 'std_fundamental': 206.5151667007161}
+                    'n_traders': 1000, 'std_fundamental': 2.5}
 
 fixed_parameters_no_mean_reversion = {"ticks": 1000, "fundamental_value": 396,
                                       "w_buy_hold": 0.0, "w_mean_reversion": 0.0,
-                                      'n_traders': 1000, 'std_fundamental': 206.5151667007161}
+                                      'n_traders': 1000, 'std_fundamental': 2.5}
 
-iterations = 100
-NRUNS = 15
+iterations = 50
+NRUNS = 5
 CORES = 4
 
 
@@ -123,6 +123,8 @@ def simulate_individual(individual):
     for col in mc_returns:
         mean_autocor_abs.append(np.mean(mc_autocorr_abs_returns[col][1:]))
         mean_kurtosis.append(mc_returns[col][2:].kurtosis())
+        if np.isnan(hurst(mc_prices[col][2:])):
+            print('bug')
         long_memory.append(hurst(mc_prices[col][2:]))
         av_deviation_fundamental.append(np.mean(mc_dev_fundamentals[col][1:]))
 
