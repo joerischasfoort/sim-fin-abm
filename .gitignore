@@ -39,6 +39,8 @@ coverage.xml
 #ignore all databases
 *.sqlite
 *.json
+*.xlxs
+*.xls
 
 #ignore al pictures
 *.png
@@ -94,3 +96,4 @@ Temporary Items
 
 # experiments folder
 experiments/
+JSTmoneyR3.xlsx
