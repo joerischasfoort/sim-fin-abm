@@ -14,6 +14,44 @@ def div0(a, b):
     return answer
 
 
+def div_by_hundred(x):
+    """ Divivde input by 100"""
+    return x / 100.0
+
+def discounted_value_cash_flow(cash_flow, periods_ahead, disc_rate):
+    """
+    Calculate discounted values of future cash flows
+    :param cash_flow: np.Array future cash flows
+    :param periods_ahead: integer of amounts of periods to look ahead
+    :param disc_rate: np.Array of discount rates per period
+    :return: np.Array of discounted future cash flows
+    """
+    return cash_flow / (1 + disc_rate)**periods_ahead
+
+
+def find_horizon(dcfs):
+    """
+    Find index at which at which the discounted_cash flows can be cut off
+    :param dcfs: list of discounted cash flows
+    :return: index at which the list can be cut off
+    """
+    for idx, cash_flow in enumerate(dcfs):
+        if cash_flow < 0.01:
+            return idx
+    return False
+
+
+def calculate_npv(dividends, discount_rates):
+    """Calculates the current NPV of a stream of dividends """
+    current_index = 0
+    final_index = len(dividends)
+    discounted_cash_flows = dividends / ((1 + discount_rates)**range(current_index, final_index))
+    if find_horizon(discounted_cash_flows):
+        return sum(discounted_cash_flows[:find_horizon(discounted_cash_flows)])
+    else:
+        return np.nan
+
+
 def hurst(ts):
     """
     source: https://www.quantstart.com/articles/Basics-of-Statistical-Mean-Reversion-Testing
@@ -75,3 +113,4 @@ def organise_data(obs):
     mc_fundamentals = pd.DataFrame(fundamentals).transpose()
 
     return mc_prices, mc_returns, mc_autocorr_returns, mc_autocorr_abs_returns, mc_volatility, mc_volume, mc_fundamentals
+
