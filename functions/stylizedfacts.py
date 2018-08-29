@@ -3,6 +3,8 @@ import pandas as pd
 import numpy as np
 from math import isclose
 from functions.helpers import div0
+import statsmodels.api as sm
+import statsmodels.tsa.stattools as ts
 
 # return autocorrelation close to zero after lag 1
 # calculate returns
@@ -124,3 +126,17 @@ def correlation_volume_volatility(volume, returns, window):
     returns_volatility = roller_returns.std(ddof=0)
     correlation = returns_volatility.corr(volume)
     return correlation
+
+
+def cointegr(fundament, price):
+    """
+    Calculate cointegration with fundamentals
+    :param fundament:
+    :param price:
+    :return: ADF test statistic, ADF critical values
+    """
+    model = sm.OLS(fundament, price)
+    res = model.fit()
+    residuals = res.resid
+    cadf = ts.adfuller(residuals)
+    return cadf[0], cadf[4]
