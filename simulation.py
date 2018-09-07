@@ -25,7 +25,13 @@ from simfinmodel import *
 #     "horizon_max": 11,
 # }
 
-parameters = {'w_buy_hold': 0.0, 'max_order_expiration_ticks': 30, 'w_random': 75.03175032570262, 'n_traders': 1000, 'horizon_min': 4, 'trader_sample_size': 28, 'fundamental_value': 396, 'w_fundamentalists': 60.485968301189594, 'spread_max': 0.08518940388804527, 'w_momentum': 83.73547977223258, 'horizon_max': 10, 'std_vol': 19, 'w_mean_reversion': 91.62137028108113, 'std_fundamental': 206.5151667007161, 'ticks': 1000, 'std_noise': 0.22068770505861335}
+parameters = {'w_buy_hold': 0.0, 'max_order_expiration_ticks': 30,
+              'w_random': 75.03175032570262, 'n_traders': 1000,
+              'horizon_min': 4, 'trader_sample_size': 28,
+              'fundamental_value': 396, 'w_fundamentalists': 60.485968301189594,
+              'spread_max': 0.08518940388804527, 'w_momentum': 83.73547977223258,
+              'horizon_max': 10, 'std_vol': 19, 'w_mean_reversion': 91.62137028108113,
+              'std_fundamental': 206.5151667007161, 'ticks': 1000, 'std_noise': 0.22068770505861335}
 
 # 2 initalise model objects
 traders, orderbook = init_objects(parameters, seed=0)
