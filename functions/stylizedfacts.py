@@ -1,7 +1,6 @@
 """This file contains functions and tests to calculate the stylized facts"""
 import pandas as pd
 import numpy as np
-from math import isclose
 from functions.helpers import div0
 import statsmodels.api as sm
 import statsmodels.tsa.stattools as ts
@@ -67,11 +66,11 @@ def clustered_volatility(returns, lags):
         return True, average_autocorrelation
 
 
-# Test 4
-def long_memory(returns, hurst_function, lag1, lag2):
-    h = hurst_function(returns, lag1, lag2)
-    #print('h = ', h)
-    return not isclose(0.5, h, abs_tol=(10 ** -1 / 2)), h
+# # Test 4
+# def long_memory(returns, hurst_function, lag1, lag2):
+#     h = hurst_function(returns, lag1, lag2)
+#     #print('h = ', h)
+#     return 0#not isclose(0.5, h, abs_tol=(10 ** -1 / 2)), h
 
 
 # functions to calculate stylized facts

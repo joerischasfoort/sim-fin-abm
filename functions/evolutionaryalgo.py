@@ -5,7 +5,6 @@ import numpy as np
 import simfinmodel
 import init_objects
 from functions.stylizedfacts import *
-from statistics import mean
 from functions.sensitivity_analysis import m_core_sim_run
 from multiprocessing import Pool
 from functions.helpers import *
