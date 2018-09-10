@@ -214,7 +214,6 @@ def pool_handler():
                                                  parents_to_mutate=0.3, parameters_to_mutate=0.1, problem=problem_no_mean_reversion))
 
 
-
 if __name__ == '__main__':
     pool_handler()
     # store best parameters

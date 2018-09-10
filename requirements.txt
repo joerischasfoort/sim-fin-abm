@@ -1,0 +1,10 @@
+numpy
+pandas
+jupyter
+matplotlib
+statsmodels
+seaborn
+pandas-datareader
+patsy
+SALib
+xlrd
