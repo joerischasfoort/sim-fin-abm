@@ -300,7 +300,7 @@ if __name__ == '__main__':
     params.update(parameters)
 
     parameters2 = all_populations_nmr[-1][0].parameters.copy()
-    params2 = fixed_parameters.copy()
+    params2 = fixed_parameters_nmr.copy()
     params2.update(parameters2)
 
     best_params = {'model1': params, 'model2': params2}
