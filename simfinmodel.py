@@ -30,8 +30,7 @@ def sim_fin_model(traders, orderbook, parameters, seed=1):
                 trader.var.weight_fundamentalist * fundamental_component +
                 trader.var.weight_chartist * chartist_component[trader.par.horizon] +
                 trader.var.weight_random * noise_component -
-                trader.var.weight_mean_reversion * chartist_component[trader.par.horizon] +
-                trader.var.weight_buy_hold * 0.0)
+                trader.var.weight_mean_reversion * chartist_component[trader.par.horizon])
 
             fcast_price = mid_price * np.exp(fcast_return)
             # submit orders

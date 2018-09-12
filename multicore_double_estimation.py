@@ -1,92 +1,105 @@
-import random
 from SALib.sample import latin
-from functions.stylizedfacts import *
-import scipy.stats as stats
 from functions.evolutionaryalgo import *
-from functions.helpers import hurst, organise_data, div_by_hundred, discounted_value_cash_flow, find_horizon, calculate_npv
-import statsmodels.api as sm
-import statsmodels.tsa.stattools as ts
+from functions.helpers import organise_data
 import json
 import time
 
 start_time = time.time()
 
-empirical_moments = np.array([-8.77599993e-03,  -9.83949423e-02,  -5.64810021e-02,
-                              3.39868973e-01,   1.23281435e+01,   3.52022421e-01,
-                              2.73786709e-01,   1.99870778e-01,   1.87612540e-01,
-                              -3.39594806e+00])
+empirical_moments = np.array([ -9.56201354e-03,  -9.55051841e-02,  -5.52010512e-02,
+         3.35217232e-01,   1.24673150e+01,   3.46352635e-01,
+         2.72135459e-01,   1.88193342e-01,   1.75876698e-01,
+        -3.39594806e+00])
 
 # Inverse of estimated covariance matrix of the bootstrapped data moments
-W = np.array([[2.53638473e+05,  9.73994019e+03, -4.46199049e+03, 7.31159946e+03, -5.27799232e+01,
-               -1.38408973e+02, 5.10471439e+02, -7.40134217e+02,  3.63796974e+02, 3.11334192e+00],
-              [9.73994019e+03,  2.84905167e+03, -1.75582573e+03, 8.10968549e+02,  5.02763080e+00,
-               3.31246691e+01, -5.77960111e+01,  5.04833763e+01,  1.13988873e-02, 1.44226613e-01],
-              [-4.46199049e+03, -1.75582573e+03,  3.47702776e+03, -8.28614614e+02,  7.41029297e-01,
-               1.39988927e+02, -1.61405317e+02,  2.18604620e+01,  9.23320345e+00, -9.71559851e-02],
-              [7.31159946e+03,  8.10968549e+02, -8.28614614e+02, 6.86382767e+02, -6.58430030e+00,
-               -2.98714422e+01, 5.77037279e+01, -5.44847645e+01,  2.03949563e+01, 7.86399558e-02],
-              [-5.27799232e+01,  5.02763080e+00,  7.41029297e-01, -6.58430030e+00,  2.14992545e-01,
-               1.04321433e+00, -1.14630971e+00,  4.77932183e-01, -2.37774578e-02, 1.54077007e-03],
-              [-1.38408973e+02,  3.31246691e+01,  1.39988927e+02, -2.98714422e+01,  1.04321433e+00,
-               3.20964551e+04, -3.99920336e+04,  1.92428227e+04, -5.12836393e+03, -2.16833621e+00],
-              [5.10471439e+02, -5.77960111e+01, -1.61405317e+02, 5.77037279e+01, -1.14630971e+00,
-               -3.99920336e+04, 5.47179032e+04, -3.20908584e+04,  9.17183886e+03, 2.75317220e+00],
-              [-7.40134217e+02,  5.04833763e+01,  2.18604620e+01, -5.44847645e+01,  4.77932183e-01,
-               1.92428227e+04, -3.20908584e+04,  2.61684553e+04, -8.84535300e+03, -1.71156204e+00],
-              [3.63796974e+02,  1.13988873e-02,  9.23320345e+00, 2.03949563e+01, -2.37774578e-02,
-               -5.12836393e+03, 9.17183886e+03, -8.84535300e+03, 3.90835745e+03, 6.99749144e-01],
-              [3.11334192e+00,  1.44226613e-01, -9.71559851e-02, 7.86399558e-02,  1.54077007e-03,
-               -2.16833621e+00, 2.75317220e+00, -1.71156204e+00,  6.99749144e-01, 3.89585172e-01]])
+W = np.array([[  3.19813864e+05,  -1.23647688e+04,  -7.75253249e+02,
+         -9.96776357e+02,  -3.46059595e+01,  -8.45442951e+01,
+          1.30642711e+02,   8.21228832e+02,  -7.53254275e+02,
+          4.01244860e-01],
+       [ -1.23647688e+04,   3.09643983e+03,  -9.12387428e+02,
+          7.15088809e+02,   4.00622557e+00,  -2.07088870e+02,
+          2.23333826e+02,   2.47454265e+01,  -7.69804083e+01,
+         -9.32556575e-01],
+       [ -7.75253249e+02,  -9.12387428e+02,   2.45450034e+03,
+         -5.66285993e+02,   2.50019644e+00,   7.52973406e+01,
+         -6.53708966e+01,   1.49542112e+01,  -3.22682344e+01,
+         -8.15971301e-02],
+       [ -9.96776357e+02,   7.15088809e+02,  -5.66285993e+02,
+          6.03184170e+02,  -6.93622662e+00,  -3.92832732e+01,
+          5.68213213e+01,  -2.51354209e+01,  -5.92040756e-01,
+         -1.47482933e-01],
+       [ -3.46059595e+01,   4.00622557e+00,   2.50019644e+00,
+         -6.93622662e+00,   2.12483995e-01,  -1.07699983e+00,
+          7.97173695e-01,   6.64963370e-01,  -4.66126569e-01,
+          1.13807341e-03],
+       [ -8.45442951e+01,  -2.07088870e+02,   7.52973406e+01,
+         -3.92832732e+01,  -1.07699983e+00,   1.23523697e+04,
+         -1.37167420e+04,  -1.80945248e+03,   5.03115269e+03,
+         -5.47676063e-01],
+       [  1.30642711e+02,   2.23333826e+02,  -6.53708966e+01,
+          5.68213213e+01,   7.97173695e-01,  -1.37167420e+04,
+          1.68349608e+04,  -6.34482252e+01,  -5.39173033e+03,
+          4.87711333e-01],
+       [  8.21228832e+02,   2.47454265e+01,   1.49542112e+01,
+         -2.51354209e+01,   6.64963370e-01,  -1.80945248e+03,
+         -6.34482252e+01,   5.75725915e+03,  -4.01464585e+03,
+         -3.56169092e-01],
+       [ -7.53254275e+02,  -7.69804083e+01,  -3.22682344e+01,
+         -5.92040756e-01,  -4.66126569e-01,   5.03115269e+03,
+         -5.39173033e+03,  -4.01464585e+03,   5.75734730e+03,
+          5.83832248e-01],
+       [  4.01244860e-01,  -9.32556575e-01,  -8.15971301e-02,
+         -1.47482933e-01,   1.13807341e-03,  -5.47676063e-01,
+          4.87711333e-01,  -3.56169092e-01,   5.83832248e-01,
+          3.93494501e-01]])
 
 # simulation time = 10 * T (where T is the lenght of the empirical data
-simulation_time = 23500
+simulation_time = 2500 # * 10
 
 problem = {
-  'num_vars': 9,
+  'num_vars': 8,
   'names': ['trader_sample_size', 'std_noise',
             'std_vol', 'w_fundamentalists', 'w_momentum',
            'w_random', 'w_mean_reversion',
-           'horizon_min', 'horizon_max'],
-  'bounds': [[1, 30], [0.05, 0.30],
-             [1, 20], [0.0, 100.0], [0.0, 100.0],
+           'horizon_max'],
+  'bounds': [[5, 20], [0.05, 0.15],
+             [4, 10], [0.0, 100.0], [0.0, 100.0],
              [1.0, 100.0], [0.0, 100.0],
-             [1, 8], [9, 30]]
+             [5, 30]]
 }
 
 # problem for the model without mean reversion
 problem_nmr = {
-  'num_vars': 8,
+  'num_vars': 7,
   'names': ['trader_sample_size', 'std_noise',
             'std_vol', 'w_fundamentalists', 'w_momentum',
-           'w_random', 'horizon_min', 'horizon_max'],
-  'bounds': [[1, 30], [0.05, 0.30],
-             [1, 20], [0.0, 100.0], [0.0, 100.0],
-             [1.0, 100.0], [1, 8], [9, 30]]
+           'w_random', 'horizon_max'],
+  'bounds': [[5, 20], [0.05, 0.15],
+             [4, 10], [0.0, 100.0], [0.0, 100.0],
+             [1.0, 100.0], [5, 30]]
 }
 
 # population size for evolutionary algo
-population_size = 250
+population_size = 50
 
 # create init paramters for both models
 latin_hyper_cube = latin.sample(problem=problem, N=population_size)
 latin_hyper_cube = latin_hyper_cube.tolist()
 
 for idx, parameters in enumerate(latin_hyper_cube):
-    # ints: 0, 2, 7, 8
+    # ints: 0, 2, 7
     latin_hyper_cube[idx][0] = int(latin_hyper_cube[idx][0])
     latin_hyper_cube[idx][2] = int(latin_hyper_cube[idx][2])
     latin_hyper_cube[idx][7] = int(latin_hyper_cube[idx][7])
-    latin_hyper_cube[idx][8] = int(latin_hyper_cube[idx][8])
 
 latin_hyper_cube_nmr = latin.sample(problem=problem_nmr, N=population_size)
 latin_hyper_cube_nmr = latin_hyper_cube_nmr.tolist()
 
 for idx, parameters in enumerate(latin_hyper_cube_nmr):
-    # ints: 0, 2, 6, 7
+    # ints: 0, 2, 6
     latin_hyper_cube_nmr[idx][0] = int(latin_hyper_cube_nmr[idx][0])
     latin_hyper_cube_nmr[idx][2] = int(latin_hyper_cube_nmr[idx][2])
     latin_hyper_cube_nmr[idx][6] = int(latin_hyper_cube_nmr[idx][6])
-    latin_hyper_cube_nmr[idx][7] = int(latin_hyper_cube_nmr[idx][7])
 
 # create initial populations for both models
 
@@ -111,19 +124,18 @@ av_pop_fitness_nmr = []
 # determine fixed parameters (see notebook)
 start_fundamental_value = 166
 std_fundamental_value = 0.0530163128919286
-burn_in_period = 100
-ticks = simulation_time
+#burn_in_period = 100 should I use this?
 
-fixed_parameters = {"ticks": ticks, "fundamental_value": start_fundamental_value, "w_buy_hold": 0.0,
-                    'n_traders': 1000, 'std_fundamental': std_fundamental_value, 'spread_max': 0.085,
+fixed_parameters = {"ticks": simulation_time, "fundamental_value": start_fundamental_value,
+                    'n_traders': 1000, 'std_fundamental': std_fundamental_value, 'spread_max': 0.004087,
                     'max_order_expiration_ticks': 30}
 
-fixed_parameters_nmr = {"ticks": ticks, "fundamental_value": start_fundamental_value, "w_buy_hold": 0.0,
-                    'n_traders': 1000, 'std_fundamental': std_fundamental_value, 'spread_max': 0.085,
+fixed_parameters_nmr = {"ticks": simulation_time, "fundamental_value": start_fundamental_value,
+                    'n_traders': 1000, 'std_fundamental': std_fundamental_value, 'spread_max': 0.004087,
                     'max_order_expiration_ticks': 30, "w_mean_reversion": 0.0}
 
-iterations = 50
-NRUNS = 5
+iterations = 40
+NRUNS = 2
 CORES = 4
 
 def simulate_individual(individual):

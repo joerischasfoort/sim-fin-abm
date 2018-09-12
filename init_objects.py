@@ -18,10 +18,9 @@ def init_objects(parameters, seed):
         weight_chartist = parameters['w_momentum']
         weight_random = parameters['w_random']
         weight_mean_reversion = parameters['w_mean_reversion']
-        weight_buy_hold = parameters['w_buy_hold']
         lft_vars = Tradervariables(weight_fundamentalist, weight_chartist, weight_random,
-                                   weight_mean_reversion, weight_buy_hold)
-        lft_params = TraderParameters(parameters['horizon_min'], parameters['horizon_max'], parameters['spread_max'])
+                                   weight_mean_reversion)
+        lft_params = TraderParameters(1, parameters['horizon_max'], parameters['spread_max'])
         lft_expectations = TraderExpectations(parameters['fundamental_value'])
         traders.append(Trader(idx, lft_vars, lft_params, lft_expectations))
 
