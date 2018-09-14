@@ -18,6 +18,7 @@ def div_by_hundred(x):
     """ Divivde input by 100"""
     return x / 100.0
 
+
 def discounted_value_cash_flow(cash_flow, periods_ahead, disc_rate):
     """
     Calculate discounted values of future cash flows
