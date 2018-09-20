@@ -71,6 +71,52 @@ def simulate_params_sobol(NRUNS, parameter_set, fixed_parameters):
     return stylized_facts
 
 
+def sim_robustness(NRUNS, parameter_set, fixed_parameters, empirical_moments, W, confidence_intervals_moments):
+    """
+    Simulate the simfin model for a set of changing and fixed parameters while outputting the j-score & MCRs
+    :param NRUNS: integer amount of Monte Carlo simulations
+    :param parameter_set: list of parameters which have been sampled for Sobol sensitivity analysis
+    :param fixed_parameters: list of parameters which will remain fixed.
+    :param empirical_moments: np.Array of empirical moments
+    :param W: np.Matrix inverse var covar matrix of bootstrapped data
+    :return: dictionary containing the j-score and mcr-scores
+    """
+    scores = {'j_score': [], 'mcr_scores': []}
+
+    for parameters in parameter_set:
+        # combine individual parameters with fixed parameters
+        params = fixed_parameters.copy()
+        params.update(parameters)
+
+        # simulate the model
+        obs = []
+        for seed in range(NRUNS):
+            traders, orderbook = init_objects.init_objects(params, seed)
+            traders, orderbook = simfinmodel.sim_fin_model(traders, orderbook, params, seed)
+            obs.append(orderbook)
+
+        # store simulated stylized facts
+        mc_prices, mc_returns, mc_autocorr_returns, mc_autocorr_abs_returns, mc_volatility, mc_volume, mc_fundamentals = organise_data(
+            obs)
+
+        scores['j_score'].append(model_fitness(mc_returns, mc_prices, mc_fundamentals, empirical_moments, W))
+
+        mcr_scores_model = []
+        for col in mc_prices:
+            mcr_scores_model.append(get_model_moments_in_confidence(pd.DataFrame(mc_returns[col]),
+                                                                    pd.DataFrame(mc_prices[col]),
+                                                                    pd.DataFrame(mc_fundamentals[col]),
+                                                                    confidence_intervals_moments))
+
+        # calc MC scores
+        scores['mcr_scores'].append([true_scores(mcr_scores_model, i) for i in range(len(empirical_moments))])
+
+    return scores
+
+
+
+
+
 def m_core_sim_run(parameters): #TODO update
     """
     Run the simulation once with a set of parameters. Can be used to run on multiple cores

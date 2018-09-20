@@ -114,4 +114,3 @@ def organise_data(obs):
     mc_fundamentals = pd.DataFrame(fundamentals).transpose()
 
     return mc_prices, mc_returns, mc_autocorr_returns, mc_autocorr_abs_returns, mc_volatility, mc_volume, mc_fundamentals
-
