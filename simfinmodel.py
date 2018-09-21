@@ -14,7 +14,6 @@ def sim_fin_model(traders, orderbook, parameters, seed=1):
         fundamental.append(fundamental[-1] + parameters["std_fundamental"] * np.random.randn())
 
         # select active traders
-        #active_traders = [traders[np.random.randint(1, len(traders))]]
         active_traders = random.sample(traders, int((parameters['trader_sample_size'])))
 
         # update common price components
@@ -50,3 +49,5 @@ def sim_fin_model(traders, orderbook, parameters, seed=1):
         orderbook.fundamental = fundamental
 
     return traders, orderbook
+
+

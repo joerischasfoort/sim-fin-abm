@@ -4,7 +4,6 @@ import numpy as np
 from functions.helpers import div0
 import statsmodels.api as sm
 import statsmodels.tsa.stattools as ts
-from functions.evolutionaryalgo import quadratic_loss_function
 
 # return autocorrelation close to zero after lag 1
 # calculate returns
@@ -140,55 +139,6 @@ def cointegr(fundament, price):
     residuals = res.resid
     cadf = ts.adfuller(residuals)
     return cadf[0], cadf[4]
-
-
-def model_fitness(mc_rets, mc_p, mc_f, emp_m, weights):
-    """
-    Calculate the model fitness based on a quadtratic loss function
-    :param mc_rets: pd.DataFrame of simulation returns
-    :param mc_p: pd.DataFrame of simulation prices
-    :param mc_f: pd.DataFrame of simulation fundamentals
-    :param emp_m: np.Array of empirical moments
-    :param weights: np.Matrix of weights
-    :return:
-    """
-    first_order_autocors = []
-    autocors1 = []
-    autocors5 = []
-    mean_abs_autocor = []
-    kurtoses = []
-    spy_abs_auto10 = []
-    spy_abs_auto25 = []
-    spy_abs_auto50 = []
-    spy_abs_auto100 = []
-    cointegrations = []
-    for col in mc_rets:
-        first_order_autocors.append(autocorrelation_returns(mc_rets[col][1:], 25))
-        autocors1.append(mc_rets[col][1:].autocorr(lag=1))
-        autocors5.append(mc_rets[col][1:].autocorr(lag=5))
-        mean_abs_autocor.append(autocorrelation_abs_returns(mc_rets[col][1:], 25))
-        kurtoses.append(mc_rets[col][2:].kurtosis())
-        spy_abs_auto10.append(mc_rets[col][1:].abs().autocorr(lag=10))
-        spy_abs_auto25.append(mc_rets[col][1:].abs().autocorr(lag=25))
-        spy_abs_auto50.append(mc_rets[col][1:].abs().autocorr(lag=50))
-        spy_abs_auto100.append(mc_rets[col][1:].abs().autocorr(lag=100))
-        cointegrations.append(cointegr(mc_p[col][1:], mc_f[col][1:])[0])
-
-    stylized_facts_sim = np.array([
-        np.mean(first_order_autocors),
-        np.mean(autocors1),
-        np.mean(autocors5),
-        np.mean(mean_abs_autocor),
-        np.mean(kurtoses),
-        np.mean(spy_abs_auto10),
-        np.mean(spy_abs_auto25),
-        np.mean(spy_abs_auto50),
-        np.mean(spy_abs_auto100),
-        np.mean(cointegrations)
-    ])
-
-    # return cost
-    return quadratic_loss_function(stylized_facts_sim, emp_m, weights)
 
 
 def true_scores(simulations, m_index):

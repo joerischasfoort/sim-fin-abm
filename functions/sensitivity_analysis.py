@@ -5,6 +5,7 @@ import simfinmodel
 import init_objects
 from functions.stylizedfacts import *
 from functions.helpers import *
+from functions.evolutionaryalgo import m_fitness
 
 
 def simulate_params_sobol(NRUNS, parameter_set, fixed_parameters):
@@ -91,7 +92,7 @@ def sim_robustness(NRUNS, parameter_set, fixed_parameters, empirical_moments, W,
         # simulate the model
         obs = []
         for seed in range(NRUNS):
-            traders, orderbook = init_objects.init_objects(params, seed)
+            traders, orderbook = init_objects.init_objects_contrarians(params, seed)
             traders, orderbook = simfinmodel.sim_fin_model(traders, orderbook, params, seed)
             obs.append(orderbook)
 
@@ -99,7 +100,7 @@ def sim_robustness(NRUNS, parameter_set, fixed_parameters, empirical_moments, W,
         mc_prices, mc_returns, mc_autocorr_returns, mc_autocorr_abs_returns, mc_volatility, mc_volume, mc_fundamentals = organise_data(
             obs)
 
-        scores['j_score'].append(model_fitness(mc_returns, mc_prices, mc_fundamentals, empirical_moments, W))
+        scores['j_score'].append(m_fitness(mc_returns, mc_prices, mc_fundamentals, empirical_moments, W))
 
         mcr_scores_model = []
         for col in mc_prices:
@@ -112,9 +113,6 @@ def sim_robustness(NRUNS, parameter_set, fixed_parameters, empirical_moments, W,
         scores['mcr_scores'].append([true_scores(mcr_scores_model, i) for i in range(len(empirical_moments))])
 
     return scores
-
-
-
 
 
 def m_core_sim_run(parameters): #TODO update
