@@ -100,3 +100,4 @@ Temporary Items
 # experiments folder
 experiments/
 JSTmoneyR3.xlsx
+*.csv
