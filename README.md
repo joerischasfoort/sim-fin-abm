@@ -1,7 +1,7 @@
-# sim-fin-abm
+# Simple FINancial Agent-Based Model (SIM-FIN-ABM)
 This repository contains simple financial markets agent-based model (abm) with fundamentalist, mean-reversion & momentum traders
 While this is a work in progress, the model works. Feel free to copy or use the code under the terms of the licence under LICENCE.txt. 
- 
+
 # How to use the model
 1. Download the repository to your system.
 2. Run the model using the simulations.py file or one of the Jupyter notebooks. 
