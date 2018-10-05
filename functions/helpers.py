@@ -3,19 +3,27 @@ from numpy import log, polyfit, sqrt, std, subtract
 import pandas as pd
 
 
-def div0(a, b):
+def div0(numerator, denominator):
     """
     ignore / 0, and return 0 div0( [-1, 0, 1], 0 ) -> [0, 0, 0]
     credits to Dennis @ https://stackoverflow.com/questions/26248654/numpy-return-0-with-divide-by-zero
+    :param numerator: float numerator
+    :param denominator: float denominator
+    :return: float answer
     """
-    answer = np.true_divide(a, b)
+    answer = np.true_divide(numerator, denominator)
     if not np.isfinite(answer):
         answer = 0
+
     return answer
 
 
 def div_by_hundred(x):
-    """ Divivde input by 100"""
+    """
+    Divivde input by 100
+    :param x: float input
+    :return: float output
+    """
     return x / 100.0
 
 
@@ -74,8 +82,8 @@ def hurst(ts):
 def organise_data(obs):
     """
     Extract data in managable format from list of orderbooks
-    :param obs:
-    :return:
+    :param obs: object limit-orderbook
+    :return: Pandas DataFrames of prices, returns, autocorrelation in returns, autocorr_abs_returns, volatility, volume, fundamentals
     """
     burn_in_period = 100
     window = 20

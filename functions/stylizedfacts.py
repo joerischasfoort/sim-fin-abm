@@ -5,8 +5,7 @@ from functions.helpers import div0
 import statsmodels.api as sm
 import statsmodels.tsa.stattools as ts
 
-# return autocorrelation close to zero after lag 1
-# calculate returns
+
 def calculate_close(orderbook_transaction_price_history):
     closing_prices = []
     for day in orderbook_transaction_price_history:
@@ -24,7 +23,6 @@ def calculate_returns(orderbook_transaction_price_history):
     return returns[1:]
 
 
-# Test 1
 def zero_autocorrelation(returns, lags):
     """returns wether average autocorrelation is much different from zero"""
     autocorr_returns = [returns.autocorr(lag=lag) for lag in range(lags)]
@@ -35,15 +33,6 @@ def zero_autocorrelation(returns, lags):
     else:
         return False, np.inf
 
-# # Test 2
-# def fat_tails(returns):
-#     results = powerlaw.Fit(returns)
-#     alpha = results.power_law.alpha
-#     #print(alpha)
-#     if (alpha < 5) and (alpha > 3):
-#         return True, alpha
-#     else:
-#         return False, np.inf
 
 def fat_tails_kurtosis(returns):
     series_returns = pd.Series(returns)
@@ -54,26 +43,15 @@ def fat_tails_kurtosis(returns):
         return False, np.inf
 
 
-# Test 3
 def clustered_volatility(returns, lags):
     absolute_returns = returns.abs()
     autocorr_abs_returns = [absolute_returns.autocorr(lag=lag) for lag in range(lags)]
     average_autocorrelation = np.mean(autocorr_abs_returns[1:])
-    #print(average_autocorrelation)
     if (average_autocorrelation < 0.1) and (average_autocorrelation > -0.1):
         return False, np.inf
     else:
         return True, average_autocorrelation
 
-
-# # Test 4
-# def long_memory(returns, hurst_function, lag1, lag2):
-#     h = hurst_function(returns, lag1, lag2)
-#     #print('h = ', h)
-#     return 0#not isclose(0.5, h, abs_tol=(10 ** -1 / 2)), h
-
-
-# functions to calculate stylized facts
 
 def autocorrelation_returns(returns, lags):
     """
@@ -153,7 +131,14 @@ def true_scores(simulations, m_index):
 
 
 def get_model_moments_in_confidence(mc_rets, mc_p, mc_f, conf_int_mom):
-    """Get moments of a particular simulation and check if they fall in the bounds"""
+    """
+    Get moments of a particular simulation and check if they fall in the bounds
+    :param mc_rets: Pandas Dataframe of simulated returns
+    :param mc_p: Pandas Dataframe of simulated prices
+    :param mc_f: Pandas Dataframe of simulated fundamental value
+    :param conf_int_mom:
+    :return: list of True and False's for all the moments which are within the confidence intervals
+    """
     first_order_autocors = []
     autocors1 = []
     autocors5 = []

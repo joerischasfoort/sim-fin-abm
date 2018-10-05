@@ -7,26 +7,13 @@ import time
 start_time = time.time()
 CORES = 1 # insert amount of cores available on computer
 
-parameters = {
-    # global parameters set through evolutionary algorithm calibration
-    "n_traders": 1309,
-    "ticks": 1000,
-    "trader_sample_size": 21,
-    "fundamental_value": 100,
-    "std_fundamental": 0.08317728524869135,
-    "std_noise": 0.05633716087190844,
-    "std_vol": 5,
-    "max_order_expiration_ticks": 18,
-    # trader parameters
-    "w_fundamentalists": 20.84484458217016,
-    "w_momentum": 58.107737854582844,
-    "w_random": 1.4948772502086316,
-    "w_mean_reversion": 69.1289833734435,
-    "w_buy_hold": 0.0,
-    "spread_max": 0.044494473036647685,
-    "horizon_min": 7,
-    "horizon_max": 11,
-}
+parameters = {'max_order_expiration_ticks': 30,
+              'w_random': 75.03175032570262, 'n_traders': 1000,
+              'trader_sample_size': 28,
+              'fundamental_value': 396, 'w_fundamentalists': 60.485968301189594,
+              'spread_max': 0.08518940388804527, 'w_momentum': 83.73547977223258,
+              'horizon_max': 10, 'std_vol': 19, 'w_mean_reversion': 91.62137028108113,
+              'std_fundamental': 0.05151667007161, 'ticks': 1000, 'std_noise': 0.22068770505861335}
 
 parameter_set = [parameters for x in range(4)]
 

@@ -4,8 +4,9 @@ from objects.orderbook import *
 
 def init_objects(parameters, seed):
     """
-    Function to initialise the model agentss
+    Initialises the model agents and orderbook
     :param parameters: object which holds all model parameters
+    :param seed: integer seed for the random number generator
     :return: list of agents
     """
     np.random.seed(seed)
@@ -32,10 +33,11 @@ def init_objects(parameters, seed):
 
 def init_objects_contrarians(parameters, seed):
     """
-    Function to initialise the model agents for experiment which replaces fundamentalists with mean
+    Initialises the model agents and orderbook for experiment which replaces fundamentalists with mean
     reversion traders
     :param parameters: object which holds all model parameters
-    :return: list of agents
+    :param seed: integer seed for the random number generator
+    :return: list of agents, Orderbook object
     """
     np.random.seed(seed)
 

@@ -31,13 +31,12 @@ def forecast_price(current_price, expected_return):
 
 def draw_weights(std_f, std_c, std_n):
     """
-    Draw weights from a random normal distribution with standard devations
+    Draw weights from a random normal distribution with standard deviations
     :param std_f: float standard deviation of fundamentalists
     :param std_c: float standard deviation of chartists
     :param std_n: float standard deviation of random traders
     :return: np array of weights
     """
-    # draw weights from a random normal distribution
     sigmas = [std_f, std_c, std_n]
     weights = np.array([np.random.normal(1, sigma) for sigma in sigmas])
 

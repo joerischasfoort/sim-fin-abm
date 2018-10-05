@@ -2,9 +2,11 @@
 
 from init_objects import *
 from simfinmodel import *
+import time
+
+start_time = time.time()
 
 # # 1 setup parameters
-
 parameters = {'max_order_expiration_ticks': 30,
               'w_random': 75.03175032570262, 'n_traders': 1000,
               'trader_sample_size': 28,
@@ -18,3 +20,5 @@ traders, orderbook = init_objects(parameters, seed=0)
 
 # 3 simulate model
 traders, orderbook = sim_fin_model(traders, orderbook, parameters, seed=0)
+
+print("The simulations took", time.time() - start_time, "to run")
