@@ -24,7 +24,6 @@ class LimitOrderBook:
         self.bids = []
         self.asks = []
         self.order_expiration = order_expiration
-        self.m_m_orders_available_after_cleaning = False
         self.highest_bid_price = last_price - (spread_max / 2)
         self.lowest_ask_price = last_price + (spread_max / 2)
         self.tick_close_price = [np.mean([self.highest_bid_price, self.lowest_ask_price])]

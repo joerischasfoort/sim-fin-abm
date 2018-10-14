@@ -41,7 +41,7 @@ class Tradervariables:
         self.weight_mean_reversion = abs(np.random.laplace(0., weight_mean_reversion))
         self.forecast_adjust = 1. / (
             self.weight_fundamentalist + self.weight_chartist + self.weight_random + self.weight_mean_reversion)
-        self.last_buy_price = {'price': 0, 'age': 0}
+        #self.last_buy_price = {'price': 0, 'age': 0}
 
 
 class TraderParameters:

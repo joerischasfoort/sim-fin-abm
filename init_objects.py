@@ -60,3 +60,39 @@ def init_objects_contrarians(parameters, seed):
                                parameters['horizon_max'], parameters['max_order_expiration_ticks'])
 
     return traders, orderbook
+
+
+def init_objects_optimized(parameters, seed):
+    """
+    Initialises the model agents and orderbook using numpy dtypes, this will greatly enhance simulation performance
+    :param parameters: object which holds all model parameters
+    :param seed: integer seed for the random number generator
+    :return: list of agents
+    """
+    np.random.seed(seed)
+
+    agent_def = [('name', 'S6'), ('weight_fundamentalist', 'f8'),
+                 ('weight_chartist', 'f8'), ('weight_random', 'f8'),
+                 ('weight_mean_reversion', 'f8'), ('forecast_adjust', 'f8'), ('horizon', 'i8'),
+                 ('spread', 'f8'), ('exp_price', 'f8')]
+
+    init_traders = []
+    for i in range(parameters["n_traders"]):
+        name = 'ag{}'.format(i)
+        weight_fundamentalist = abs(np.random.normal(0., parameters["w_fundamentalists"]))
+        weight_chartist = abs(np.random.normal(0., parameters["w_momentum"]))
+        weight_random = abs(np.random.normal(0., parameters["w_random"]))
+        weight_mean_reversion = abs(np.random.normal(0., parameters["w_mean_reversion"]))
+        f_cast_adj = 1. / (weight_fundamentalist + weight_chartist + weight_random + weight_mean_reversion)
+        horizon = np.random.randint(1, parameters['horizon_max'])
+        spread = parameters['spread_max'] * np.random.rand()
+        exp_price = parameters['fundamental_value']
+
+        init_traders.append((name, weight_fundamentalist, weight_chartist, weight_random, weight_mean_reversion,
+                             f_cast_adj, horizon, spread, exp_price))
+
+    traders = np.rec.array(init_traders, dtype=agent_def)
+    orderbook = LimitOrderBook(parameters['fundamental_value'], parameters["spread_max"],
+                               parameters['horizon_max'], parameters['max_order_expiration_ticks'])
+
+    return traders, orderbook
