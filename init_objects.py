@@ -92,7 +92,5 @@ def init_objects_optimized(parameters, seed):
                              f_cast_adj, horizon, spread, exp_price))
 
     traders = np.rec.array(init_traders, dtype=agent_def)
-    orderbook = LimitOrderBook(parameters['fundamental_value'], parameters["spread_max"],
-                               parameters['horizon_max'], parameters['max_order_expiration_ticks'])
 
-    return traders, orderbook
+    return traders

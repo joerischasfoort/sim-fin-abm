@@ -1,70 +1,24 @@
-""""The main model"""
-import numpy as np
-import random
+"""Simulation file used to run the model"""
+
+from init_objects import *
 from numba import jit
+import time
 
+start_time = time.time()
 
-np.seterr(all='raise')
+# # 1 setup parameters
+parameters = {"spread_max": 0.004087, "fundamental_value": 166,
+              "trader_sample_size": 19, "n_traders": 200,
+              "ticks": 25000, "std_fundamental": 0.0530163128919286,
+              "std_noise": 0.10696588473846724, "w_mean_reversion": 93.63551013606137,
+              "w_fundamentalists": 8.489180919376432, "w_momentum": 43.055017297045524,
+              "max_order_expiration_ticks": 30, "std_vol": 7, "w_random": 73.28414619497076,
+              "horizon_max": 10}
 
-def sim_fin_model(traders, orderbook, parameters, seed=1):
-    """
-    The main model function
-    :param traders: list of Agent objects
-    :param orderbook: object Order book
-    :param parameters: dictionary of parameters
-    :param seed: integer seed to initialise the random number generators
-    :return: list of simulated Agent objects, object simulated Order book
-    """
-    random.seed(seed)
-    np.random.seed(seed)
-    fundamental = [parameters["fundamental_value"]]
+# 2 initalise model objects
+traders = init_objects_optimized(parameters, seed=0)
 
-    for tick in range(parameters['horizon_max'] + 1, parameters["ticks"]):
-        # evolve the fundamental value via random walk process
-        fundamental.append(fundamental[-1] + parameters["std_fundamental"] * np.random.randn())
-
-        # select random sample of active traders
-        active_traders = random.sample(traders, int((parameters['trader_sample_size'])))
-
-        # update common expectation components
-        mid_price = orderbook.tick_close_price[-1]
-        fundamental_component = np.log(fundamental[-1] / mid_price)
-        chartist_component = np.cumsum(orderbook.returns[:-parameters['horizon_max']-1:-1]
-                                       ) / np.arange(1., float(parameters['horizon_max'] + 1))
-
-        for trader in active_traders:
-            # update trader specific expectations
-            noise_component = parameters['std_noise'] * np.random.randn()
-
-            fcast_return = trader.var.forecast_adjust * (
-                trader.var.weight_fundamentalist * fundamental_component +
-                trader.var.weight_chartist * chartist_component[trader.par.horizon] +
-                trader.var.weight_random * noise_component -
-                trader.var.weight_mean_reversion * chartist_component[trader.par.horizon])
-
-            fcast_price = mid_price * np.exp(fcast_return)
-
-            # submit orders
-            if fcast_price > mid_price:
-                bid_price = fcast_price * (1. - trader.par.spread)
-                orderbook.add_bid(bid_price, abs(int(np.random.normal(scale=parameters['std_vol']))), trader)
-            elif fcast_price < mid_price:
-                ask_price = fcast_price * (1 + trader.par.spread)
-                orderbook.add_ask(ask_price, abs(int(np.random.normal(scale=parameters['std_vol']))), trader)
-
-        # match orders in the order-book
-        while True:
-            matched_orders = orderbook.match_orders()
-            if matched_orders is None:
-                break
-
-        # clear and update order-book history
-        orderbook.cleanse_book()
-        orderbook.fundamental = fundamental
-
-    return traders, orderbook
-
-
+#@profile
 def sim_fin_model_optimized(traders, parameters, seed=1):
     """
     The main model function optimized using numpy
@@ -161,7 +115,7 @@ def sim_fin_model_optimized(traders, parameters, seed=1):
         # update the fundamental value via random walk process
         fundamental[tick] = fundamental[tick - 1] + parameters["std_fundamental"] * np.random.randn()
         # select random sample of active traders
-        a = np.arange(0, len(traders), parameters['trader_sample_size'])
+        a = np.arange(len(traders))
         np.random.shuffle(a)
         active_traders = traders[a[:parameters['trader_sample_size']]]
 
@@ -220,3 +174,9 @@ def sim_fin_model_optimized(traders, parameters, seed=1):
     return traders, close_prices, returns
 
 
+# 3 simulate model
+traders, close_prices, returns = sim_fin_model_optimized(traders, parameters, seed=0)
+
+print(close_prices)
+print(returns)
+print("The simulations took", time.time() - start_time, "to run")
