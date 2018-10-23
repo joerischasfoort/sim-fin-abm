@@ -72,7 +72,7 @@ def simulate_params_sobol(NRUNS, parameter_set, fixed_parameters):
     return stylized_facts
 
 
-def sim_robustness(NRUNS, parameter_set, fixed_parameters, empirical_moments, W, confidence_intervals_moments):
+def sim_robustness(NRUNS, parameter_set, fixed_parameters, empirical_moments, W, confidence_intervals_moments, experiment=1):
     """
     Simulate the simfin model for a set of changing and fixed parameters while outputting the j-score & MCRs
     :param NRUNS: integer amount of Monte Carlo simulations
@@ -92,7 +92,10 @@ def sim_robustness(NRUNS, parameter_set, fixed_parameters, empirical_moments, W,
         # simulate the model
         obs = []
         for seed in range(NRUNS):
-            traders, orderbook = init_objects.init_objects_contrarians(params, seed)
+            if experiment == 1:
+                traders, orderbook = init_objects.init_objects_contrarians(params, seed)
+            if experiment == 2:
+                traders, orderbook = init_objects.init_objects_chartists(params, seed)
             traders, orderbook = simfinmodel.sim_fin_model(traders, orderbook, params, seed)
             obs.append(orderbook)
 
