@@ -41,7 +41,6 @@ class Tradervariables:
         self.weight_mean_reversion = abs(np.random.laplace(0., weight_mean_reversion))
         self.forecast_adjust = 1. / (
             self.weight_fundamentalist + self.weight_chartist + self.weight_random + self.weight_mean_reversion)
-        #self.last_buy_price = {'price': 0, 'age': 0}
 
 
 class TraderParameters:
@@ -56,6 +55,42 @@ class TraderParameters:
         :param max_spread: Maximum spread at which the trader will submit orders to the book
         """
         self.horizon = np.random.randint(horizon_min, horizon_max)
+        self.spread = max_spread * np.random.rand()
+
+
+class TraderVariablesDistribution:
+    """
+    Holds the initial variables for the traders
+    """
+    def __init__(self, weight_fundamentalist, weight_chartist, weight_random, money, stocks):
+        """
+        Initializes variables for the trader
+        :param weight_fundamentalist: float fundamentalist expectation component
+        :param weight_chartist: float trend-following chartism expectation component
+        :param weight_random: float random or heterogeneous expectation component
+        :param weight_mean_reversion: float mean-reversion chartism expectation component
+        """
+        self.weight_fundamentalist = abs(np.random.laplace(0., weight_fundamentalist))
+        self.weight_chartist = abs(np.random.laplace(0., weight_chartist))
+        self.weight_random = abs(np.random.laplace(0., weight_random))
+        self.forecast_adjust = 1. / (self.weight_fundamentalist + self.weight_chartist + self.weight_random)
+        self.money = money
+        self.stocks = stocks
+
+
+class TraderParametersDistribution:
+    """
+    Holds the the trader parameters for the distribution model
+    """
+
+    def __init__(self, ref_horizon, max_spread):
+        """
+        Initializes trader parameters
+        :param horizon_min: integer minimum horizon over which the trader can observe the past
+        :param horizon_max: integer maximum horizon over which the trader can observe the past
+        :param max_spread: Maximum spread at which the trader will submit orders to the book
+        """
+        self.horizon = ref_horizon
         self.spread = max_spread * np.random.rand()
 
 
