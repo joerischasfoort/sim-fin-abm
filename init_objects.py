@@ -140,18 +140,32 @@ def init_objects_distr(parameters, seed):
     n_traders = parameters["n_traders"]
 
     for idx in range(n_traders):
-        weight_fundamentalist = parameters['w_fundamentalists']
-        weight_chartist = parameters['w_momentum']
-        weight_random = parameters['w_random']
-        lft_vars = TraderVariablesDistribution(weight_fundamentalist, weight_chartist, weight_random,
-                                               parameters["init_money"], parameters["init_stocks"])
-        individual_horizon = int(parameters['horizon'] * np.divide(1 + weight_fundamentalist, 1 + weight_chartist)) # equation 4 TODO Debug NEW
-        lft_params = TraderParametersDistribution(individual_horizon, parameters['spread_max'])
+        weight_fundamentalist = abs(np.random.laplace(0., parameters['w_fundamentalists']))
+        weight_chartist = abs(np.random.laplace(0., parameters['w_momentum']))
+        weight_random = abs(np.random.laplace(0., parameters['w_random']))
+        forecast_adjust = 1. / (weight_fundamentalist + weight_chartist + weight_random)
+
+        init_stocks = np.random.uniform(0, parameters["init_stocks"])
+        init_money = np.random.uniform(0, (parameters["init_stocks"] * parameters['fundamental_value']))
+
+        lft_vars = TraderVariablesDistribution(weight_fundamentalist, weight_chartist, weight_random, forecast_adjust,
+                                               init_money, init_stocks)
+
+        # determine heterogeneous horizon and risk aversion based on
+        relative_fundamentalism = np.divide(1 + (weight_fundamentalist * forecast_adjust),
+                                            1 + (weight_chartist * forecast_adjust))
+        individual_horizon = int(parameters['horizon'] * relative_fundamentalism)
+        individual_risk_aversion = parameters["base_risk_aversion"] * relative_fundamentalism
+
+        lft_params = TraderParametersDistribution(individual_horizon, individual_risk_aversion)
         lft_expectations = TraderExpectations(parameters['fundamental_value'])
         traders.append(Trader(idx, lft_vars, lft_params, lft_expectations))
 
-    orderbook = LimitOrderBook(parameters['fundamental_value'], parameters["spread_max"],
-                               parameters['horizon'] + parameters["horizon"], #TODO this is not an elegant solution
-                               parameters['max_order_expiration_ticks'])
+    orderbook = LimitOrderBook(parameters['fundamental_value'], parameters["std_fundamental"],
+                               (parameters['horizon'] * 2), #this is the max horizon of an agent if 100% fundamentalist
+                               parameters['ticks'])
+
+    # initialize order-book returns for initial variance calculations
+    orderbook.returns = list(np.random.normal(0., parameters["std_fundamental"], (parameters['horizon'] * 2)))
 
     return traders, orderbook
