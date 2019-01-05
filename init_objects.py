@@ -140,9 +140,9 @@ def init_objects_distr(parameters, seed):
     n_traders = parameters["n_traders"]
 
     for idx in range(n_traders):
-        weight_fundamentalist = abs(np.random.laplace(0., parameters['w_fundamentalists']))
-        weight_chartist = abs(np.random.laplace(0., parameters['w_momentum']))
-        weight_random = abs(np.random.laplace(0., parameters['w_random']))
+        weight_fundamentalist = np.random.laplace(parameters['w_fundamentalists'], parameters['w_fundamentalists']**2)
+        weight_chartist = np.random.laplace(parameters['w_momentum'], parameters['w_momentum']**2)
+        weight_random = np.random.laplace(parameters['w_random'], parameters['w_random']**2)
         forecast_adjust = 1. / (weight_fundamentalist + weight_chartist + weight_random)
 
         init_stocks = np.random.uniform(0, parameters["init_stocks"])

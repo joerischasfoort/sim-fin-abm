@@ -4,14 +4,14 @@ import time
 
 start_time = time.time()
 
-# # 1 setup parameters TODO add parameters
+# # 1 setup parameters
 parameters = {"fundamental_value": 166,
               "trader_sample_size": 10, "n_traders": 5000,
               "ticks": 1000, "std_fundamental": 0.0530163128919286,
               "std_noise": 0.10696588473846724,
-              "w_fundamentalists": 8.489180919376432, "w_momentum": 43.055017297045524,
+              "w_fundamentalists": 10.0, "w_momentum": 0.0,
               "init_stocks": 25, "base_risk_aversion": 0.05,
-              "w_random": 73.28414619497076,
+              "w_random": 1.0,
               "horizon": 200}
 
 # 2 initalise model objects
