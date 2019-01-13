@@ -49,7 +49,7 @@ def quadratic_loss_function(m_sim, m_emp, weights):
         return score
 
 
-def evolve_population(population, fittest_to_retain, random_to_retain, parents_to_mutate, parameters_to_mutate, problem): #TODO change
+def evolve_population(population, fittest_to_retain, random_to_retain, parents_to_mutate, parameters_to_mutate, problem):
     """
     Evolves a population. First, the fittest members of the population plus some random individuals become parents.
     Then, some random mutations take place in the parents. Finally, the parents breed to create children.

@@ -3,6 +3,20 @@ from numpy import log, polyfit, sqrt, std, subtract
 import pandas as pd
 
 
+def calculate_covariance_matrix(historical_stock_returns):
+    """
+    Calculate the covariance matrix of a safe asset (money) provided stock returns
+    :param historical_stock_returns: list of historical stock returns
+    :return: DataFrame of the covariance matrix of stocks and money (in practice just the variance).
+    """
+    assets = ['stocks', 'money']
+    covariances = np.cov(np.array([historical_stock_returns, np.zeros(len(historical_stock_returns))]))
+
+    if covariances.sum().sum() == 0.:
+        raise ValueError('there is no trading for a long time')
+    return pd.DataFrame(covariances, index=assets, columns=assets)
+
+
 def div0(numerator, denominator):
     """
     ignore / 0, and return 0 div0( [-1, 0, 1], 0 ) -> [0, 0, 0]

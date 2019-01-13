@@ -22,6 +22,31 @@ class Trader:
         """
         return 'Trader' + str(self.name)
 
+    def sell(self, amount, price):
+        """
+        Sells `amount` of stocks for a total of `price`
+        :param amount: int Number of stocks sold.
+        :param price: float Total price for stocks.
+        :return: -
+        """
+        if self.var.stocks < amount:
+            raise ValueError("not enough stocks to sell this amount")
+        self.var.stocks -= amount
+        self.var.money += price
+
+    def buy(self, amount, price):
+        """
+        Buys `amount` of stocks for a total of `price`
+        :param amount: int number of stocks bought.
+        :param price: float total price for stocks.
+        :return: -
+        """
+        if self.var.money < price:
+            raise ValueError("not enough money to buy this amount of stocks")
+
+        self.var.stocks += amount
+        self.var.money -= price
+
 
 class Tradervariables:
     """
@@ -62,7 +87,8 @@ class TraderVariablesDistribution:
     """
     Holds the initial variables for the traders
     """
-    def __init__(self, weight_fundamentalist, weight_chartist, weight_random, forecast_adjust, money, stocks):
+    def __init__(self, weight_fundamentalist, weight_chartist, weight_random, forecast_adjust,
+                 money, stocks, covariance_matrix):
         """
         Initializes variables for the trader
         :param weight_fundamentalist: float fundamentalist expectation component
@@ -76,6 +102,7 @@ class TraderVariablesDistribution:
         self.forecast_adjust = forecast_adjust
         self.money = money
         self.stocks = stocks
+        self.covariance_matrix = covariance_matrix
         self.active_orders = []
 
 
@@ -84,7 +111,7 @@ class TraderParametersDistribution:
     Holds the the trader parameters for the distribution model
     """
 
-    def __init__(self, ref_horizon, risk_aversion):
+    def __init__(self, ref_horizon, risk_aversion, max_spread):
         """
         Initializes trader parameters
         :param ref_horizon: integer horizon over which the trader can observe the past
@@ -93,6 +120,7 @@ class TraderParametersDistribution:
         """
         self.horizon = ref_horizon
         self.risk_aversion = risk_aversion
+        self.spread = max_spread * np.random.rand()
 
 
 class TraderExpectations:
@@ -105,4 +133,5 @@ class TraderExpectations:
         :param price: float
         """
         self.price = price
+        self.returns = {'stocks': 0.0, 'money': 0.0}
 

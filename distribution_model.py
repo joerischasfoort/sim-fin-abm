@@ -1,6 +1,88 @@
 import random
 import numpy as np
 import scipy.optimize
+from functions.portfolio_optimization import *
+from functions.helpers import calculate_covariance_matrix
+
+
+def pb_distr_model(traders, orderbook, parameters, seed=1):
+    """
+    The main model function of distribution model where trader stocks are tracked.
+    :param traders: list of Agent objects
+    :param orderbook: object Order book
+    :param parameters: dictionary of parameters
+    :param seed: integer seed to initialise the random number generators
+    :return: list of simulated Agent objects, object simulated Order book
+    """
+    random.seed(seed)
+    np.random.seed(seed)
+    fundamental = [parameters["fundamental_value"]]
+
+    for tick in range(parameters['horizon'] + 1, parameters["ticks"] + parameters['horizon'] + 1): # for init history
+        if tick == 500:
+            print(500)
+
+        # evolve the fundamental value via random walk process
+        fundamental.append(fundamental[-1] + parameters["std_fundamental"] * np.random.randn())
+
+        # select random sample of active traders
+        active_traders = random.sample(traders, int((parameters['trader_sample_size'])))
+
+        # update common expectation components
+        mid_price = orderbook.tick_close_price[-1]
+        fundamental_component = np.log(fundamental[-1] / mid_price) #TODO add expected mean reversion time period? as in equation 1
+        chartist_component = np.cumsum(orderbook.returns[:-len(orderbook.returns)-1:-1]
+                                       ) / np.arange(1., float(len(orderbook.returns) + 1))
+
+        for trader in active_traders:
+            # 1 Cancel any active orders
+            if trader.var.active_orders:
+                for order in trader.var.active_orders:
+                    orderbook.cancel_order(order)
+                trader.var.active_orders = []
+
+            # Update trader specific expectations
+            noise_component = parameters['std_noise'] * np.random.randn()
+
+            # Expectation formation
+            trader.exp.returns['stocks'] = trader.var.forecast_adjust * (
+                trader.var.weight_fundamentalist * fundamental_component +
+                trader.var.weight_chartist * chartist_component[trader.par.horizon - 1] +
+                trader.var.weight_random * noise_component)
+            fcast_price = mid_price * np.exp(trader.exp.returns['stocks'])
+            trader.var.covariance_matrix = calculate_covariance_matrix(orderbook.returns[-trader.par.horizon:])
+
+            # employ portfolio optimization algo
+            ideal_trader_weights = portfolio_optimization(trader, tick)
+
+            # Determine price and volume
+            trader_price = np.random.normal(fcast_price, trader.par.spread)
+            position_change = (ideal_trader_weights['stocks'] * (trader.var.stocks * trader_price + trader.var.money)
+                      ) - (trader.var.stocks * trader_price)
+            volume = int(np.divide(position_change, trader_price))
+
+            # Trade:
+            if volume > 0:
+                bid = orderbook.add_bid(trader_price, volume, trader)
+                trader.var.active_orders.append(bid)
+            elif volume < 0:
+                ask = orderbook.add_ask(trader_price, -volume, trader)
+                trader.var.active_orders.append(ask)
+
+        # Match orders in the order-book
+        while True:
+            matched_orders = orderbook.match_orders()
+            if matched_orders is None:
+                break
+            # execute trade
+            matched_orders[3].owner.sell(matched_orders[1], matched_orders[0] * matched_orders[1])
+            matched_orders[2].owner.buy(matched_orders[1], matched_orders[0] * matched_orders[1])
+
+        # Clear and update order-book history
+        orderbook.cleanse_book()
+        orderbook.fundamental = fundamental
+
+    return traders, orderbook
 
 
 def distr_model(traders, orderbook, parameters, seed=1):
@@ -44,7 +126,7 @@ def distr_model(traders, orderbook, parameters, seed=1):
 
             fcast_return = trader.var.forecast_adjust * (
                 trader.var.weight_fundamentalist * fundamental_component +
-                trader.var.weight_chartist * chartist_component[trader.par.horizon] +
+                trader.var.weight_chartist * chartist_component[trader.par.horizon - 1] +
                 trader.var.weight_random * noise_component)
 
             fcast_price = mid_price * np.exp(fcast_return)
@@ -69,13 +151,13 @@ def distr_model(traders, orderbook, parameters, seed=1):
                 return stocks
 
             try:
-                p_star_price = scipy.optimize.brentq(optimal_p_star, 0.01, fundamental[-1] * len(traders) * parameters['init_money'])
+                p_star_price = scipy.optimize.brentq(optimal_p_star, 0.01, fundamental[-1] * len(traders) * (parameters["init_stocks"] * parameters['fundamental_value'])) #TODO fix bug, what to replace init money with..
             except:
                 p_star_price = None #to prevent crashes if the optimizer cannot find the optimal price
 
             if p_star_price:
                 p_max = fcast_price
-                p_min = scipy.optimize.brentq(minimal_p, 0.01, fundamental[-1] * len(traders) * parameters['init_money']) #TODO debug
+                p_min = scipy.optimize.brentq(minimal_p, 0.01, fundamental[-1] * len(traders) * (parameters["init_stocks"] * parameters['fundamental_value']))
                 trader_price = np.random.uniform(low=p_min, high=p_max)
                 # get best ask / best bid
                 lowest_ask_price, highest_bid_price = orderbook.lowest_ask_price, orderbook.highest_bid_price
@@ -103,6 +185,9 @@ def distr_model(traders, orderbook, parameters, seed=1):
             matched_orders = orderbook.match_orders()
             if matched_orders is None:
                 break
+            # execute trade
+            matched_orders[3].owner.sell(matched_orders[1], matched_orders[0] * matched_orders[1])
+            matched_orders[2].owner.buy(matched_orders[1], matched_orders[0] * matched_orders[1])
 
         # clear and update order-book history
         orderbook.cleanse_book()

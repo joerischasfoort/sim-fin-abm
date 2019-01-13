@@ -105,7 +105,7 @@ class LimitOrderBook:
         self.tick_close_price.append(np.mean([self.highest_bid_price, self.lowest_ask_price]))
 
         # update returns
-        self.returns.append((self.tick_close_price[-1] - self.tick_close_price[-2]) / self.tick_close_price[-2]) #TODO check if this works
+        self.returns.append((self.tick_close_price[-1] - self.tick_close_price[-2]) / self.tick_close_price[-2])
 
     def match_orders(self):
         """
