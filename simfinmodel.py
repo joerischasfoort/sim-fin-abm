@@ -1,7 +1,6 @@
 """"The main model"""
 import numpy as np
 import random
-from numba import jit
 
 
 np.seterr(all='raise')
