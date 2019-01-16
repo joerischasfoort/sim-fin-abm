@@ -94,13 +94,14 @@ def hurst(ts):
     return poly[0]*2.0
 
 
-def organise_data(obs):
+def organise_data(obs, burn_in_period=100):
     """
-    Extract data in managable format from list of orderbooks
+    Extract data in manageable format from list of orderbooks
     :param obs: object limit-orderbook
+    :param burn_in_period: integer period of observations which is discarded
     :return: Pandas DataFrames of prices, returns, autocorrelation in returns, autocorr_abs_returns, volatility, volume, fundamentals
     """
-    burn_in_period = 100
+    #burn_in_period = 100
     window = 20
     close_price = []
     returns = []

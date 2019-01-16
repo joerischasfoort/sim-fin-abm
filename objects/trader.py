@@ -29,10 +29,10 @@ class Trader:
         :param price: float Total price for stocks.
         :return: -
         """
-        if self.var.stocks < amount:
+        if self.var.stocks[-1] < amount:
             raise ValueError("not enough stocks to sell this amount")
-        self.var.stocks -= amount
-        self.var.money += price
+        self.var.stocks[-1] -= amount
+        self.var.money[-1] += price
 
     def buy(self, amount, price):
         """
@@ -41,11 +41,11 @@ class Trader:
         :param price: float total price for stocks.
         :return: -
         """
-        if self.var.money < price:
+        if self.var.money[-1] < price:
             raise ValueError("not enough money to buy this amount of stocks")
 
-        self.var.stocks += amount
-        self.var.money -= price
+        self.var.stocks[-1] += amount
+        self.var.money[-1] -= price
 
 
 class Tradervariables:
@@ -100,8 +100,8 @@ class TraderVariablesDistribution:
         self.weight_chartist = weight_chartist
         self.weight_random = weight_random
         self.forecast_adjust = forecast_adjust
-        self.money = money
-        self.stocks = stocks
+        self.money = [money] #TODO make into list to store history
+        self.stocks = [stocks] #TODO make into list to store history
         self.covariance_matrix = covariance_matrix
         self.active_orders = []
 
