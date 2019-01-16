@@ -1,7 +1,7 @@
 from init_objects import *
 from distribution_model import *
-from functions.indirect_calibration import *
 import time
+
 
 start_time = time.time()
 
@@ -16,11 +16,6 @@ parameters = {"fundamental_value": 166,
 
 # 2 initialise model objects TODO perhaps update the diversity of several parameters such as horizon & risk aversion
 traders, orderbook = init_objects_distr(parameters, seed=0)
-
-# sim model with calibration
-init_params = [22, 0.23362219092236586, 58.56886341766124, 35.18232041845091, 48, 0.3066593229633973, 10]
-
-distr_model_performance(init_params)
 
 # 3 simulate model
 traders, orderbook = pb_distr_model(traders, orderbook, parameters, seed=0)

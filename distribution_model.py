@@ -2,7 +2,7 @@ import random
 import numpy as np
 import scipy.optimize
 from functions.portfolio_optimization import *
-from functions.helpers import calculate_covariance_matrix
+from functions.helpers import calculate_covariance_matrix, div0
 
 
 def pb_distr_model(traders, orderbook, parameters, seed=1):
@@ -19,8 +19,8 @@ def pb_distr_model(traders, orderbook, parameters, seed=1):
     fundamental = [parameters["fundamental_value"]]
 
     for tick in range(parameters['horizon'] + 1, parameters["ticks"] + parameters['horizon'] + 1): # for init history
-        if tick == 500:
-            print(500)
+        if tick == parameters['horizon'] + 1:
+            print('Start of simulation ', seed)
 
         # evolve the fundamental value via random walk process
         fundamental.append(fundamental[-1] + parameters["std_fundamental"] * np.random.randn())
@@ -50,7 +50,8 @@ def pb_distr_model(traders, orderbook, parameters, seed=1):
                 trader.var.weight_chartist * chartist_component[trader.par.horizon - 1] +
                 trader.var.weight_random * noise_component)
             fcast_price = mid_price * np.exp(trader.exp.returns['stocks'])
-            trader.var.covariance_matrix = calculate_covariance_matrix(orderbook.returns[-trader.par.horizon:])
+            trader.var.covariance_matrix = calculate_covariance_matrix(orderbook.returns[-trader.par.horizon:],
+                                                                       parameters["std_fundamental"])
 
             # employ portfolio optimization algo
             ideal_trader_weights = portfolio_optimization(trader, tick)
@@ -59,7 +60,7 @@ def pb_distr_model(traders, orderbook, parameters, seed=1):
             trader_price = np.random.normal(fcast_price, trader.par.spread)
             position_change = (ideal_trader_weights['stocks'] * (trader.var.stocks * trader_price + trader.var.money)
                       ) - (trader.var.stocks * trader_price)
-            volume = int(np.divide(position_change, trader_price))
+            volume = int(div0(position_change, trader_price))
 
             # Trade:
             if volume > 0:

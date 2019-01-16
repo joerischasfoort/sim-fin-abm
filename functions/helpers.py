@@ -3,7 +3,7 @@ from numpy import log, polyfit, sqrt, std, subtract
 import pandas as pd
 
 
-def calculate_covariance_matrix(historical_stock_returns):
+def calculate_covariance_matrix(historical_stock_returns, base_historical_variance):
     """
     Calculate the covariance matrix of a safe asset (money) provided stock returns
     :param historical_stock_returns: list of historical stock returns
@@ -13,7 +13,8 @@ def calculate_covariance_matrix(historical_stock_returns):
     covariances = np.cov(np.array([historical_stock_returns, np.zeros(len(historical_stock_returns))]))
 
     if covariances.sum().sum() == 0.:
-        raise ValueError('there is no trading for a long time')
+        # If the price is stationary, revert to base historical variance
+        covariances[0][0] = base_historical_variance
     return pd.DataFrame(covariances, index=assets, columns=assets)
 
 

@@ -156,7 +156,7 @@ def init_objects_distr(parameters, seed):
         init_money = np.random.uniform(0, (parameters["init_stocks"] * parameters['fundamental_value']))
 
         # initialize co_variance_matrix
-        init_covariance_matrix = calculate_covariance_matrix(historical_stock_returns)
+        init_covariance_matrix = calculate_covariance_matrix(historical_stock_returns, parameters["std_fundamental"])
 
         lft_vars = TraderVariablesDistribution(weight_fundamentalist, weight_chartist, weight_random, forecast_adjust,
                                                init_money, init_stocks, init_covariance_matrix)
