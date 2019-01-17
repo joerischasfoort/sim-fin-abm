@@ -2,6 +2,7 @@ from distribution_model import pb_distr_model
 from init_objects import init_objects_distr
 from functions.helpers import organise_data
 from functions.evolutionaryalgo import *
+#from hurst import compute_Hc
 
 
 def distr_model_performance(input_parameters):

@@ -40,6 +40,6 @@ def lorenz_curve(array):
 
     fig, ax = plt.subplots(figsize=[6,6])
     # scatter plot of Lorenz curve
-    ax.plot(np.arange(lorenz.size)/float((lorenz.size-1)), lorenz, s=100)
+    ax.plot(np.arange(lorenz.size)/float((lorenz.size-1)), lorenz)
     # line plot of equality
     ax.plot([0,1], [0,1], color='k')
