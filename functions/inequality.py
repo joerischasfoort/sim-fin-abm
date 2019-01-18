@@ -24,7 +24,7 @@ def gini(array):
     index = np.arange(1, array.shape[0] + 1)
     n = array.shape[0] # number of array elements
 
-    gini_coefficient = ((np.sum((2 * index - n  - 1) * array)) / (n * np.sum(array)))
+    gini_coefficient = ((np.sum((2 * index - n - 1) * array)) / (n * np.sum(array)))
 
     return gini_coefficient
 
