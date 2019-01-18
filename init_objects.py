@@ -148,8 +148,8 @@ def init_objects_distr(parameters, seed):
 
     for idx in range(n_traders):
         weight_fundamentalist = abs(np.random.laplace(parameters['w_fundamentalists'], parameters['w_fundamentalists']**2))
-        weight_chartist = np.random.laplace(parameters['w_momentum'], parameters['w_momentum']**2)
-        weight_random = np.random.laplace(parameters['w_random'], parameters['w_random']**2)
+        weight_chartist = abs(np.random.laplace(parameters['w_momentum'], parameters['w_momentum']**2))
+        weight_random = abs(np.random.laplace(parameters['w_random'], parameters['w_random']**2))
         forecast_adjust = 1. / (weight_fundamentalist + weight_chartist + weight_random)
 
         init_stocks = int(np.random.uniform(0, parameters["init_stocks"]))
@@ -162,10 +162,10 @@ def init_objects_distr(parameters, seed):
                                                init_money, init_stocks, init_covariance_matrix)
 
         # determine heterogeneous horizon and risk aversion based on
-        relative_fundamentalism = np.divide(1 + (abs(weight_fundamentalist * forecast_adjust)),
-                                            1 + (abs(weight_chartist * forecast_adjust)))
-        individual_horizon = min(int(parameters['horizon'] * relative_fundamentalism), max_horizon)
-        individual_risk_aversion = parameters["base_risk_aversion"] * relative_fundamentalism
+        #relative_fundamentalism = np.divide(1 + (abs(weight_fundamentalist * forecast_adjust)), 1 + (abs(weight_chartist * forecast_adjust)))
+        individual_horizon = np.random.randint(10, parameters['horizon']) #min(int(parameters['horizon'] * relative_fundamentalism), max_horizon)
+
+        individual_risk_aversion = abs(np.random.normal(parameters["base_risk_aversion"], parameters["base_risk_aversion"] / 5.0))#parameters["base_risk_aversion"] * relative_fundamentalism
 
         lft_params = TraderParametersDistribution(individual_horizon, individual_risk_aversion, parameters['spread_max'])
         lft_expectations = TraderExpectations(parameters['fundamental_value'])
