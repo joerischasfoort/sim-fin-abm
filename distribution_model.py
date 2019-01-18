@@ -17,6 +17,8 @@ def pb_distr_model(traders, orderbook, parameters, seed=1):
     random.seed(seed)
     np.random.seed(seed)
     fundamental = [parameters["fundamental_value"]]
+    # TODO the next can be done in a more elegant way
+    orderbook.tick_close_price.append(fundamental[-1])
 
     for tick in range(parameters['horizon'] + 1, parameters["ticks"] + parameters['horizon'] + 1): # for init history
         if tick == parameters['horizon'] + 1:
@@ -30,59 +32,66 @@ def pb_distr_model(traders, orderbook, parameters, seed=1):
         # evolve the fundamental value via random walk process
         fundamental.append(fundamental[-1] + parameters["std_fundamental"] * np.random.randn())
 
-        # select random sample of active traders
-        active_traders = random.sample(traders, int((parameters['trader_sample_size'])))
+        # allow for multiple trades in one day
+        for turn in range(parameters["trades_per_tick"]):
+            # select random sample of active traders
+            active_traders = random.sample(traders, int((parameters['trader_sample_size'])))
 
-        # update common expectation components
-        mid_price = orderbook.tick_close_price[-1]
-        fundamental_component = np.log(fundamental[-1] / mid_price) #TODO add expected mean reversion time period? as in equation 1
-        chartist_component = np.cumsum(orderbook.returns[:-len(orderbook.returns)-1:-1]
-                                       ) / np.arange(1., float(len(orderbook.returns) + 1))
+            # update common expectation components
 
-        for trader in active_traders:
-            # 1 Cancel any active orders
-            if trader.var.active_orders:
-                for order in trader.var.active_orders:
-                    orderbook.cancel_order(order)
-                trader.var.active_orders = []
 
-            # Update trader specific expectations
-            noise_component = parameters['std_noise'] * np.random.randn()
+            mid_price = np.mean([orderbook.highest_bid_price, orderbook.lowest_ask_price]) #TODO debug
+            fundamental_component = np.log(
+                fundamental[-1] / mid_price)  # TODO add expected mean reversion time period? as in equation 1
 
-            # Expectation formation
-            trader.exp.returns['stocks'] = trader.var.forecast_adjust * (
-                trader.var.weight_fundamentalist * fundamental_component +
-                trader.var.weight_chartist * chartist_component[trader.par.horizon - 1] +
-                trader.var.weight_random * noise_component)
-            fcast_price = mid_price * np.exp(trader.exp.returns['stocks'])
-            trader.var.covariance_matrix = calculate_covariance_matrix(orderbook.returns[-trader.par.horizon:],
-                                                                       parameters["std_fundamental"])
+            orderbook.returns[-1] = (mid_price - orderbook.tick_close_price[-2]) / orderbook.tick_close_price[-2] #TODO debug
+            chartist_component = np.cumsum(orderbook.returns[:-len(orderbook.returns) - 1:-1]
+                                           ) / np.arange(1., float(len(orderbook.returns) + 1))
 
-            # employ portfolio optimization algo
-            ideal_trader_weights = portfolio_optimization(trader, tick)
+            for trader in active_traders:
+                # 1 Cancel any active orders
+                if trader.var.active_orders:
+                    for order in trader.var.active_orders:
+                        orderbook.cancel_order(order)
+                    trader.var.active_orders = []
 
-            # Determine price and volume
-            trader_price = np.random.normal(fcast_price, trader.par.spread)
-            position_change = (ideal_trader_weights['stocks'] * (trader.var.stocks[-1] * trader_price + trader.var.money[-1])
-                      ) - (trader.var.stocks[-1] * trader_price)
-            volume = int(div0(position_change, trader_price))
+                # Update trader specific expectations
+                noise_component = parameters['std_noise'] * np.random.randn()
 
-            # Trade:
-            if volume > 0:
-                bid = orderbook.add_bid(trader_price, volume, trader)
-                trader.var.active_orders.append(bid)
-            elif volume < 0:
-                ask = orderbook.add_ask(trader_price, -volume, trader)
-                trader.var.active_orders.append(ask)
+                # Expectation formation
+                trader.exp.returns['stocks'] = trader.var.forecast_adjust * (
+                    trader.var.weight_fundamentalist * fundamental_component +
+                    trader.var.weight_chartist * chartist_component[trader.par.horizon - 1] +
+                    trader.var.weight_random * noise_component)
+                fcast_price = mid_price * np.exp(trader.exp.returns['stocks'])
+                trader.var.covariance_matrix = calculate_covariance_matrix(orderbook.returns[-trader.par.horizon:],
+                                                                           parameters["std_fundamental"])
 
-        # Match orders in the order-book
-        while True:
-            matched_orders = orderbook.match_orders()
-            if matched_orders is None:
-                break
-            # execute trade
-            matched_orders[3].owner.sell(matched_orders[1], matched_orders[0] * matched_orders[1])
-            matched_orders[2].owner.buy(matched_orders[1], matched_orders[0] * matched_orders[1])
+                # employ portfolio optimization algo
+                ideal_trader_weights = portfolio_optimization(trader, tick)
+
+                # Determine price and volume
+                trader_price = np.random.normal(fcast_price, trader.par.spread)
+                position_change = (ideal_trader_weights['stocks'] * (trader.var.stocks[-1] * trader_price + trader.var.money[-1])
+                          ) - (trader.var.stocks[-1] * trader_price)
+                volume = int(div0(position_change, trader_price))
+
+                # Trade:
+                if volume > 0:
+                    bid = orderbook.add_bid(trader_price, volume, trader)
+                    trader.var.active_orders.append(bid)
+                elif volume < 0:
+                    ask = orderbook.add_ask(trader_price, -volume, trader)
+                    trader.var.active_orders.append(ask)
+
+            # Match orders in the order-book
+            while True:
+                matched_orders = orderbook.match_orders()
+                if matched_orders is None:
+                    break
+                # execute trade
+                matched_orders[3].owner.sell(matched_orders[1], matched_orders[0] * matched_orders[1])
+                matched_orders[2].owner.buy(matched_orders[1], matched_orders[0] * matched_orders[1])
 
         # Clear and update order-book history
         orderbook.cleanse_book()

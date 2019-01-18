@@ -127,8 +127,7 @@ class LimitOrderBook:
             if winning_bid.volume == winning_ask.volume:
                 # notify owner it no longer has an order in the market
                 for order in [winning_bid, winning_ask]:
-                    if 'HFT' in repr(order.owner):
-                        order.owner.var.active_orders = []
+                    order.owner.var.active_orders = []
                 # remove these elements from list
                 del self.bids[-1]
                 del self.asks[0]
@@ -141,14 +140,12 @@ class LimitOrderBook:
                 self.bids[-1].volume -= volume
                 # delete the empty bid or ask
                 if min_index == 0:
-                    if 'HFT' in repr(self.bids[-1].owner):
-                        self.bids[-1].owner.var.active_orders = []
+                    self.bids[-1].owner.var.active_orders = []
                     del self.bids[-1]
                     # update current highest bid
                     self.update_bid_ask_spread('bid')
                 else:
-                    if 'HFT' in repr(self.asks[0].owner):
-                        self.asks[0].owner.var.active_orders = []
+                    self.asks[0].owner.var.active_orders = []
                     del self.asks[0]
                     # update current lowest ask
                     self.update_bid_ask_spread('ask')
