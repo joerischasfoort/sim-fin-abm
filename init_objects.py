@@ -5,7 +5,6 @@ import numpy as np
 from functions.helpers import calculate_covariance_matrix
 
 
-
 def init_objects(parameters, seed):
     """
     Initialises the model agents and orderbook
@@ -159,15 +158,17 @@ def init_objects_distr(parameters, seed):
         init_covariance_matrix = calculate_covariance_matrix(historical_stock_returns, parameters["std_fundamental"])
 
         lft_vars = TraderVariablesDistribution(weight_fundamentalist, weight_chartist, weight_random, forecast_adjust,
-                                               init_money, init_stocks, init_covariance_matrix)
+                                               init_money, init_stocks, init_covariance_matrix,
+                                               parameters['fundamental_value'])
 
         # determine heterogeneous horizon and risk aversion based on
-        #relative_fundamentalism = np.divide(1 + (abs(weight_fundamentalist * forecast_adjust)), 1 + (abs(weight_chartist * forecast_adjust)))
-        individual_horizon = np.random.randint(10, parameters['horizon']) #min(int(parameters['horizon'] * relative_fundamentalism), max_horizon)
+        individual_horizon = np.random.randint(10, parameters['horizon'])
 
         individual_risk_aversion = abs(np.random.normal(parameters["base_risk_aversion"], parameters["base_risk_aversion"] / 5.0))#parameters["base_risk_aversion"] * relative_fundamentalism
+        individual_learning_ability = np.random.uniform(high=parameters["mutation_probability"]) #TODO update to be more elegant
 
-        lft_params = TraderParametersDistribution(individual_horizon, individual_risk_aversion, parameters['spread_max'])
+        lft_params = TraderParametersDistribution(individual_horizon, individual_risk_aversion,
+                                                  individual_learning_ability, parameters['spread_max'])
         lft_expectations = TraderExpectations(parameters['fundamental_value'])
         traders.append(Trader(idx, lft_vars, lft_params, lft_expectations))
 

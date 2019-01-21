@@ -28,6 +28,13 @@ def pb_distr_model(traders, orderbook, parameters, seed=1):
         for trader in traders:
             trader.var.money.append(trader.var.money[-1])
             trader.var.stocks.append(trader.var.stocks[-1])
+            trader.var.wealth.append(trader.var.money[-1] + trader.var.stocks[-1] * orderbook.tick_close_price[-1]) # TODO debug
+            trader.var.weight_fundamentalist.append(trader.var.weight_fundamentalist[-1])
+            trader.var.weight_chartist.append(trader.var.weight_chartist[-1])
+            trader.var.weight_random.append(trader.var.weight_random[-1])
+
+        # sort the traders by wealth to
+        traders.sort(key=lambda x: x.var.wealth[-1], reverse=True)
 
         # evolve the fundamental value via random walk process
         fundamental.append(fundamental[-1] + parameters["std_fundamental"] * np.random.randn())
@@ -37,32 +44,50 @@ def pb_distr_model(traders, orderbook, parameters, seed=1):
             # select random sample of active traders
             active_traders = random.sample(traders, int((parameters['trader_sample_size'])))
 
-            # update common expectation components
-
-
             mid_price = np.mean([orderbook.highest_bid_price, orderbook.lowest_ask_price]) #TODO debug
-            fundamental_component = np.log(
-                fundamental[-1] / mid_price)  # TODO add expected mean reversion time period? as in equation 1
+            fundamental_component = np.log(fundamental[-1] / mid_price)
 
             orderbook.returns[-1] = (mid_price - orderbook.tick_close_price[-2]) / orderbook.tick_close_price[-2] #TODO debug
             chartist_component = np.cumsum(orderbook.returns[:-len(orderbook.returns) - 1:-1]
                                            ) / np.arange(1., float(len(orderbook.returns) + 1))
 
             for trader in active_traders:
-                # 1 Cancel any active orders
+                # Cancel any active orders
                 if trader.var.active_orders:
                     for order in trader.var.active_orders:
                         orderbook.cancel_order(order)
                     trader.var.active_orders = []
 
+                def evolve(probability):
+                    return random.random() < probability
+
+                # Evolve an expectations parameter by learning from a successful trader
+                if evolve(trader.par.learning_ability):
+                    wealthy_trader = traders[random.randint(0, parameters['trader_sample_size'])]
+                    # update weights
+                    trader.var.weight_fundamentalist[-1] = np.mean([wealthy_trader.var.weight_fundamentalist[-1] * wealthy_trader.var.forecast_adjust,
+                                                           trader.var.weight_fundamentalist[-1] * trader.var.forecast_adjust]) / trader.var.forecast_adjust
+                    trader.var.weight_chartist[-1] = np.mean([wealthy_trader.var.weight_chartist[-1] * wealthy_trader.var.forecast_adjust,
+                                                     trader.var.weight_chartist[-1] * trader.var.forecast_adjust]) / trader.var.forecast_adjust
+                    trader.var.weight_random[-1] = np.mean([wealthy_trader.var.weight_random[-1] * wealthy_trader.var.forecast_adjust,
+                                                   trader.var.weight_random[-1] * trader.var.forecast_adjust]) / trader.var.forecast_adjust
+
+                # mutate an expectations parameter
+                if evolve(parameters['mutation_probability']):
+                    expectation_components = [trader.var.weight_fundamentalist, trader.var.weight_chartist, trader.var.weight_random]
+                    mutation_parameters = [parameters['w_fundamentalists'], parameters['w_momentum'], parameters['w_random']]
+                    index_mutation = random.randint(0, len(expectation_components)-1)
+                    expectation_components[index_mutation][-1] = abs(np.random.laplace(expectation_components[index_mutation][-1],#mutation_parameters[index_mutation], TODO check if works as intended
+                                                                               mutation_parameters[index_mutation] ** 2))
+
                 # Update trader specific expectations
                 noise_component = parameters['std_noise'] * np.random.randn()
 
-                # Expectation formation
+                # Expectation formation #TODO DEBUG
                 trader.exp.returns['stocks'] = trader.var.forecast_adjust * (
-                    trader.var.weight_fundamentalist * fundamental_component +
-                    trader.var.weight_chartist * chartist_component[trader.par.horizon - 1] +
-                    trader.var.weight_random * noise_component)
+                    trader.var.weight_fundamentalist[-1] * np.divide(1, float(trader.par.horizon) * parameters["fundamentalist_horizon_multiplier"]) * fundamental_component +
+                    trader.var.weight_chartist[-1] * chartist_component[trader.par.horizon - 1] +
+                    trader.var.weight_random[-1] * noise_component)
                 fcast_price = mid_price * np.exp(trader.exp.returns['stocks'])
                 trader.var.covariance_matrix = calculate_covariance_matrix(orderbook.returns[-trader.par.horizon:],
                                                                            parameters["std_fundamental"])

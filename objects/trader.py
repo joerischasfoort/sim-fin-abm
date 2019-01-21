@@ -89,7 +89,7 @@ class TraderVariablesDistribution:
     Holds the initial variables for the traders
     """
     def __init__(self, weight_fundamentalist, weight_chartist, weight_random, forecast_adjust,
-                 money, stocks, covariance_matrix):
+                 money, stocks, covariance_matrix, init_price):
         """
         Initializes variables for the trader
         :param weight_fundamentalist: float fundamentalist expectation component
@@ -97,12 +97,13 @@ class TraderVariablesDistribution:
         :param weight_random: float random or heterogeneous expectation component
         :param weight_mean_reversion: float mean-reversion chartism expectation component
         """
-        self.weight_fundamentalist = weight_fundamentalist
-        self.weight_chartist = weight_chartist
-        self.weight_random = weight_random
+        self.weight_fundamentalist = [weight_fundamentalist]
+        self.weight_chartist = [weight_chartist]
+        self.weight_random = [weight_random]
         self.forecast_adjust = forecast_adjust
-        self.money = [money] #TODO make into list to store history
-        self.stocks = [stocks] #TODO make into list to store history
+        self.money = [money]
+        self.stocks = [stocks]
+        self.wealth = [money + stocks * init_price]
         self.covariance_matrix = covariance_matrix
         self.active_orders = []
 
@@ -112,7 +113,7 @@ class TraderParametersDistribution:
     Holds the the trader parameters for the distribution model
     """
 
-    def __init__(self, ref_horizon, risk_aversion, max_spread):
+    def __init__(self, ref_horizon, risk_aversion, learning_ability, max_spread):
         """
         Initializes trader parameters
         :param ref_horizon: integer horizon over which the trader can observe the past
@@ -121,6 +122,7 @@ class TraderParametersDistribution:
         """
         self.horizon = ref_horizon
         self.risk_aversion = risk_aversion
+        self.learning_ability = learning_ability
         self.spread = max_spread * np.random.rand()
 
 
