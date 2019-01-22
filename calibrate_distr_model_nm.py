@@ -13,15 +13,18 @@ population_size = 4
 CORES = 4 # insert amount of cores available on computer
 
 problem = {
-  'num_vars': 7,
+  'num_vars': 10,
   'names': ['trader_sample_size', 'std_noise',
             'w_fundamentalists', 'w_momentum',
-            'init_stocks', 'base_risk_aversion',
-           'horizon'],
+            'base_risk_aversion',
+            'horizon', "fundamentalist_horizon_multiplier",
+            "trades_per_tick", "mutation_probability",
+            "average_learning_ability"],
   'bounds': [[1, 30], [0.05, 0.30],
              [0.0, 100.0], [0.0, 100.0],
-             [1, 100], [0.1, 15.0],
-             [9, 30]]
+             [0.1, 15.0],
+             [9, 30], [0.1, 1.0], [1, 5], [0.1, 0.9],
+             [0.1, 1.0]]
 }
 
 # use latin hypercube to formulate tuple of all inputs

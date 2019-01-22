@@ -2,7 +2,6 @@ from distribution_model import pb_distr_model
 from init_objects import init_objects_distr
 from functions.helpers import organise_data
 from functions.evolutionaryalgo import *
-#from hurst import compute_Hc
 
 
 def distr_model_performance(input_parameters):
@@ -13,9 +12,10 @@ def distr_model_performance(input_parameters):
     """
     # set fixed parameters of integer variables & variable names
     n_runs = 1
-    integer_var_locations = [0, 4, 6]
+    integer_var_locations = [0, 5, 7]
     variable_names = ['trader_sample_size', 'std_noise', 'w_fundamentalists', 'w_momentum',
-                      'init_stocks', 'base_risk_aversion', 'horizon']
+                      'base_risk_aversion', 'horizon', "fundamentalist_horizon_multiplier",
+                      "trades_per_tick", "mutation_probability", "average_learning_ability"]
 
     # convert relevant parameters to integers
     new_input_params = []
@@ -27,13 +27,13 @@ def distr_model_performance(input_parameters):
 
     # update params
     uncertain_parameters = dict(zip(variable_names, new_input_params))
-    params = {"ticks": 1235, "fundamental_value": 166, 'n_traders': 1000, 'std_fundamental': 0.0530163128919286,
-              'spread_max': 0.004087, "w_random": 1.0}
+    params = {"ticks": 1000, "fundamental_value": 166, 'n_traders': 1000, 'std_fundamental': 0.0530163128919286,
+              'spread_max': 0.004087, "w_random": 1.0, "init_stocks": 50} #TODO make ticks: 2516 * 10
     params.update(uncertain_parameters)
 
-    empirical_moments = np.array([-9.56201354e-03, -9.55051841e-02, -5.52010512e-02,
-                                  3.35217232e-01, 1.24673150e+01, 3.46352635e-01,
-                                  2.72135459e-01, 1.88193342e-01, 1.75876698e-01])
+    empirical_moments = np.array([-7.91632942e-03, -6.44109792e-02, -5.17149408e-02, 2.15757804e-01,
+                                  4.99915089e+00, 2.29239806e-01, 1.36705815e-01, 8.99171488e-02, 3.97109985e-02,
+                                  4.56905198e-02, 3.40685479e-03])
 
     traders = []
     obs = []
@@ -57,6 +57,8 @@ def distr_model_performance(input_parameters):
     spy_abs_auto25 = []
     spy_abs_auto50 = []
     spy_abs_auto100 = []
+    spy_abs_auto150 = []
+    spy_abs_auto200 = []
     for col in mc_returns:
         first_order_autocors.append(autocorrelation_returns(mc_returns[col][1:], 25))
         autocors1.append(mc_returns[col][1:].autocorr(lag=1))
@@ -67,6 +69,8 @@ def distr_model_performance(input_parameters):
         spy_abs_auto25.append(mc_returns[col][1:].abs().autocorr(lag=25))
         spy_abs_auto50.append(mc_returns[col][1:].abs().autocorr(lag=50))
         spy_abs_auto100.append(mc_returns[col][1:].abs().autocorr(lag=100))
+        spy_abs_auto150.append(mc_returns[col][1:].abs().autocorr(lag=150))
+        spy_abs_auto200.append(mc_returns[col][1:].abs().autocorr(lag=200))
 
     stylized_facts_sim = np.array([
         np.mean(first_order_autocors),
@@ -77,11 +81,15 @@ def distr_model_performance(input_parameters):
         np.mean(spy_abs_auto10),
         np.mean(spy_abs_auto25),
         np.mean(spy_abs_auto50),
-        np.mean(spy_abs_auto100)
+        np.mean(spy_abs_auto100),
+        np.mean(spy_abs_auto150),
+        np.mean(spy_abs_auto200)
     ])
 
+    W = np.load('distr_weighting_matrix.npy') #if this doesn't work, use: np.identity(len(stylized_facts_sim))
+
     # calculate the cost
-    cost = quadratic_loss_function(stylized_facts_sim, empirical_moments, np.identity(len(stylized_facts_sim)))
+    cost = quadratic_loss_function(stylized_facts_sim, empirical_moments, W)
     return cost
 
 

@@ -79,6 +79,13 @@ def pb_distr_model(traders, orderbook, parameters, seed=1):
                     index_mutation = random.randint(0, len(expectation_components)-1)
                     expectation_components[index_mutation][-1] = abs(np.random.laplace(expectation_components[index_mutation][-1],#mutation_parameters[index_mutation], TODO check if works as intended
                                                                                mutation_parameters[index_mutation] ** 2))
+                    # recalculate the traders forecast adjustment
+                    trader.var.forecast_adjust = 1. / (trader.var.weight_fundamentalist[-1] + trader.var.weight_chartist[-1] + trader.var.weight_random[-1])
+
+                # record sentiment in orderbook
+                orderbook.sentiment.append(trader.var.forecast_adjust * np.array([trader.var.weight_fundamentalist[-1],
+                                                                                  trader.var.weight_chartist[-1],
+                                                                                  trader.var.weight_random[-1]]))
 
                 # Update trader specific expectations
                 noise_component = parameters['std_noise'] * np.random.randn()

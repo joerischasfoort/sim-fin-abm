@@ -4,6 +4,7 @@ import bisect
 import operator
 import numpy as np
 
+
 class LimitOrderBook:
     """
     Class which represents the limit-orderbook used by modern Stock markets
@@ -38,6 +39,10 @@ class LimitOrderBook:
         self.transaction_volumes_history = []
         self.highest_bid_price_history = []
         self.lowest_ask_price_history = []
+
+        # historical sentiment in market data storage
+        self.sentiment = []
+        self.sentiment_history = []
 
     def add_bid(self, price, volume, agent):
         """
@@ -89,6 +94,10 @@ class LimitOrderBook:
         # store and clean recorded transaction volumes
         self.transaction_volumes_history.append(self.transaction_volumes)
         self.transaction_volumes = []
+
+        # story and clean sentiment data
+        self.sentiment_history.append(self.sentiment)
+        self.sentiment = []
 
         # increase the age of all orders by 1
         for book in [self.bids, self.asks]:
@@ -176,7 +185,7 @@ class LimitOrderBook:
         """
         :return: String representation of the order book object
         """
-        return "order_book_{}".format(self.stock)
+        return "order_book"
 
 
 class Order:
