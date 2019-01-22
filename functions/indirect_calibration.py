@@ -27,7 +27,7 @@ def distr_model_performance(input_parameters):
 
     # update params
     uncertain_parameters = dict(zip(variable_names, new_input_params))
-    params = {"ticks": 1000, "fundamental_value": 166, 'n_traders': 1000, 'std_fundamental': 0.0530163128919286,
+    params = {"ticks": 500, "fundamental_value": 166, 'n_traders': 500, 'std_fundamental': 0.0530163128919286,
               'spread_max': 0.004087, "w_random": 1.0, "init_stocks": 50} #TODO make ticks: 2516 * 10
     params.update(uncertain_parameters)
 
