@@ -101,3 +101,4 @@ Temporary Items
 experiments/
 JSTmoneyR3.xlsx
 *.csv
+*.pickle
