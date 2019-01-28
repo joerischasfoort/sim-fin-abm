@@ -2,7 +2,7 @@ from functions.indirect_calibration import *
 import time
 import pickle
 from multiprocessing import Pool
-from SALib.sample import latin
+import json
 import numpy as np
 
 np.seterr(all='ignore')
@@ -26,17 +26,18 @@ problem = {
              [0.1, 1.0]]
 }
 
-# use latin hypercube to formulate tuple of all inputs
-latin_hyper_cube = latin.sample(problem=problem, N=population_size)
-latin_hyper_cube = tuple(latin_hyper_cube.tolist())
+with open('test.txt', 'r') as f:
+    latin_hyper_cube = json.loads(f.read())
 
 # Bounds
 LB = [x[0] for x in problem['bounds']]
 UB = [x[1] for x in problem['bounds']]
 
 
-def optimize(init_set_of_params):
+def optimize(seed):
     """Specialized function to run from NM optimizer from 1 starting point"""
+    init_set_of_params = latin_hyper_cube
+
     return constrNM(distr_model_performance, init_set_of_params, LB, UB, maxiter=15, full_output=True)
 
 
