@@ -44,13 +44,13 @@ def PSY(y, swindow0, adflag):
     return bsadf
 
 
-def cvPSYwmboot(y, swindow0, adflag, Tb, nboot=199, nCores=1):  # IC = 'BIC'
+def cvPSYwmboot(y, swindow0, adflag, control_sample_size, nboot=199, nCores=1):  # IC = 'BIC'
     """
     Computes a matrix of 90, 95 and 99 critical values which can be used to compare to the bsadf statistics.
     param: y: data array or pandas df
     param: swindow0: integer minimum window size
     param: adflag: An integer, lag order when IC=0; maximum number of lags when IC>0 (default = 0).
-    param: Tb: Integer the simulated sample size
+    param: control_sample_size: Integer the simulated sample size
     param: nboot: positive integer. Number of bootstrap replications (default = 199).
     param: nCores = integernumber of cores (supports multithreading
     return: A matrix. BSADF bootstrap critical value sequence at the 90, 95 and 99 percent level.
@@ -64,7 +64,7 @@ def cvPSYwmboot(y, swindow0, adflag, Tb, nboot=199, nCores=1):  # IC = 'BIC'
 
     T0 = len(eps)
     t = len(y)
-    dy = np.array(y[2:t] - y[1:(t - 1)])
+    dy = np.array(y.iloc[0:(t - 1)]) - np.array(y.iloc[1:t]) #difference of the data
     g = len(beta)
 
     if not swindow0:
@@ -73,27 +73,29 @@ def cvPSYwmboot(y, swindow0, adflag, Tb, nboot=199, nCores=1):  # IC = 'BIC'
     # The Data generating process (DGP)
     np.random.seed(101)
     # create matrix filled with random ints < T0 with rows TB and cols: nboot
-    rN = np.random.randint(0, T0, (Tb, nboot))
+    random_numbers = np.random.randint(0, T0, (control_sample_size, nboot))
     # create matrix filled with random normal floats with rows TB and cols: nboot
-    wn = np.random.normal(1, size=(Tb, nboot))
+    random_normal_numbers = np.random.normal(1, size=(control_sample_size, nboot))
 
-    dyb = np.zeros([Tb - 1, nboot])
-    dyb[1:lag, ] = np.repeat(dy[1:lag], repeats=nboot)
+    dyb = np.zeros([control_sample_size - 1, nboot])
+    dyb[:lag, ] = np.split(np.tile(dy[:lag], nboot), lag, axis=0) # make the first six rows equal to a repeat of the differences of that lag
 
     for j in range(nboot):
+        # loop over all columns
         if lag == 0:
-            for i in range(lag + 1,Tb):
-                dyb[i, j] = wn[i - lag, j] * eps[rN[i - lag, j]]
+            for i in range(lag + 1, control_sample_size - 1):
+                # loop over rows, start filling the rest of the rowswith random numbers
+                dyb[i, j] = random_normal_numbers[i - lag, j] * eps[random_numbers[i - lag, j]]
 
         elif lag > 0:
-            x = np.zeros(Tb-1, lag)
-            for i in range(lag + 1, Tb):
-                x = np.zeros(Tb-1, lag)
+            #x = np.zeros([control_sample_size - 1, lag])
+            for i in range(lag + 1, control_sample_size - 1):
+                x = np.zeros([control_sample_size - 1, lag])
                 for k in range(lag):
                     x[i, k] = dyb[(i - k), j]
 
                 # matrix multiplication
-                dyb[i, j] = np.dot(x[i, ], beta[2:g, 1] + wn[i - lag, j] * eps[rN[i - lag, j]])
+                dyb[i, j] = np.dot(x[i, ], beta[2:g, 1]) + random_normal_numbers[i - lag, j] * eps[random_numbers[i - lag, j]]
 
 
     yb0 = np.repeat(y[1], repeats=nboot)
@@ -108,19 +110,20 @@ def cvPSYwmboot(y, swindow0, adflag, Tb, nboot=199, nCores=1):  # IC = 'BIC'
     else:
         nCores = 1
 
-    cl = makeCluster(nCores)
-    registerDoParallel(cl)
+    #cl = makeCluster(nCores)
+    #registerDoParallel(cl)
 
-    # ----------------------------------
-    dim = Tb - swindow0 + 1
-    i = 0
+    # # ----------------------------------
+    # dim = Tb - swindow0 + 1
+    # i = 0
+    #
+    # MPSY = foreach(i=1:nboot, .inorder = FALSE, .combine = rbind) % dopar %:
+    #     PSY(yb[, i], swindow0, IC, adflag)
+    #
+    # SPSY = apply(MPSY, 1, max()) # apply MPSY function
+    # Q_SPSY = np.quantile(SPSY, confidence_levels)
 
-    MPSY = foreach(i=1:nboot, .inorder = FALSE, .combine = rbind) % dopar %:
-        PSY(yb[, i], swindow0, IC, adflag)
-
-    SPSY = as.matrix(apply(MPSY, 1, max()))
-    Q_SPSY = as.matrix(quantile(SPSY, qe))
-
-    return Q_SPSY
+    #return Q_SPSY
+    pass
 
 
