@@ -4,7 +4,92 @@ import math
 from statsmodels.tsa.stattools import adfuller
 
 
-def PSY(y, swindow0, adflag):
+def ADF(y, IC=0, adflag=0):
+    """
+    Calculates the augmented Dickey-Fuller (ADF) test statistic with lag order set fixed or selected by AIC or BIC.
+
+    Port from: https://github.com/itamarcaspi/psymonitor/
+    Credits to: Phillips, P. C. B., Shi, S., & Yu, J. (2015a).
+    Testing for multiple bubbles: Historical episodes of exuberance and collapse in the S&P 500.
+    International Economic Review, 56(4), 1034–1078.
+
+    :param y: list data
+    :param IC:
+    :param adflag:
+    :return: float ADF test statistic.
+    """
+    T0 = len(y)
+    T1 = len(y) - 1
+    const = np.ones(T1)
+
+    y1 = np.array(y[0:T1])
+    y0 = np.array(y[1:T0])
+    dy = y0 - y1
+    x1 = np.c_[y1, const]
+
+    t = T1 - adflag
+    dof = t - adflag - 2
+
+    if IC > 0:
+        ICC = np.zeros([adflag + 1, 1])
+        ADF = np.zeros([adflag + 1, 1])
+        for k in range(adflag + 1):
+            dy01 = dy[k:T1, ]
+            x2 = np.zeros([T1 - k, k])
+
+            for j in range(k):
+                x2[:, j] = dy[k - j - 1:T1 - j - 1]
+
+            x2 = np.concatenate((x1[k:T1, ], x2,), axis=1)
+
+            # OLS regression
+            beta = np.dot(np.linalg.solve(np.dot(x2.T, x2), np.identity(len(np.dot(x2.T, x2)))), np.dot(x2.T, dy01))
+            eps = dy01 - np.dot(x2, beta)
+            # Information criteria
+            npdf = sum(-1 / 2.0 * np.log(2 * np.pi) - 1 / 2.0 * (eps ** 2))
+            if IC == 1:
+                ICC[k,] = -2 * npdf / float(t) + 2 * len(beta) / float(t)  # TODO check if correct
+            elif IC == 2:
+                ICC[k,] = -2 * npdf / float(t) + len(beta) * np.log(t) / float(t)
+            se = np.dot(eps.T, eps / dof)
+            sig = np.sqrt(np.diag((np.ones([len(beta), len(beta)]) * se) * np.linalg.solve(np.dot(x2.T, x2),
+                                                                                           np.identity(
+                                                                                               len(np.dot(x2.T, x2))))))
+            ADF[k,] = beta[0,] / sig[0]
+        lag0 = np.argmin(ICC)
+        ADFlag = ADF[lag0,][0]  # TODO check if this is correct
+    elif IC == 0:
+        # Model Specification
+        dy01 = dy[adflag:T1, ]
+        x2 = np.zeros([t, adflag])
+
+        for j in range(adflag):
+            x2[:, j] = dy[adflag - j - 1:T1 - j - 1]
+
+        x2 = np.concatenate((x1[adflag:T1, ], x2,), axis=1)
+
+        # OLS regression
+        beta = np.dot(np.linalg.solve(np.dot(x2.T, x2), np.identity(len(np.dot(x2.T, x2)))), np.dot(x2.T, dy01))
+        eps = dy01 - np.dot(x2, beta)
+        se = np.dot(eps.T, eps / dof)
+        sig = np.sqrt(np.diag((np.ones([len(beta), len(beta)]) * se) * np.linalg.solve(np.dot(x2.T, x2), np.identity(
+            len(np.dot(x2.T, x2))))))
+
+        ADFlag = beta[0,] / sig[0]  # check if this is correct
+
+    if IC == 0:
+        result = ['fixed lag of order 1', ADFlag]
+
+    if IC == 1:
+        result = ['ADF Statistic using AIC', ADFlag]
+
+    if IC == 2:
+        result = ['ADF Statistic using BIC', ADFlag]
+
+    return result[1]
+
+
+def PSY(y, swindow0, IC, adflag):
     """
     Estimate PSY's BSADF sequence of test statistics
     implements the real time bubble detection procedure of Phillips, Shi and Yu (2015a,b)
@@ -32,14 +117,13 @@ def PSY(y, swindow0, adflag):
             # loop over the range 0 - 500
             # perform ADF test on data from r1 --> r2
             # insert in row
-            rwadft[r1] = float(
-                adfuller(y.iloc[r1:r2], maxlag=adflag, autolag='BIC')[0])  # two tail 5% significant level
+            rwadft[r1] = float(ADF(y.iloc[r1:r2], IC, adflag))
 
         # take max value an insert in bsadfs array
         bsadfs[r2 - 1] = max(rwadft.T[0])
 
     # create shortened version of array
-    bsadf = bsadfs[swindow0:t]
+    bsadf = bsadfs[swindow0-1 : t] #TODO check if this is correct
 
     return bsadf
 
