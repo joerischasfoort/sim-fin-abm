@@ -6,17 +6,17 @@ from statsmodels.tsa.stattools import adfuller
 
 def ADF(y, IC=0, adflag=0):
     """
-    Calculates the augmented Dickey-Fuller (ADF) test statistic with lag order set fixed or selected by AIC or BIC.
+    Calculates the augmented Dickey-Fuller (ADF) test statistic with lag order set fixed or selected by AIC or BIC
 
-    Port from: https://github.com/itamarcaspi/psymonitor/
-    Credits to: Phillips, P. C. B., Shi, S., & Yu, J. (2015a).
-    Testing for multiple bubbles: Historical episodes of exuberance and collapse in the S&P 500.
-    International Economic Review, 56(4), 1034–1078.
+    Port from github psymonitor
+    Credits to: Phillips, P C B, Shi, S, & Yu, J
+    Testing for multiple bubbles: Historical episodes of exuberance and collapse in the SP 500
+    International Economic Review 2015
 
     :param y: list data
     :param IC:
     :param adflag:
-    :return: float ADF test statistic.
+    :return: float ADF test statistic
     """
     T0 = len(y)
     T1 = len(y) - 1
