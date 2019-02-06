@@ -190,7 +190,7 @@ def ADFres(y, IC=0, adflag=0):
     return beta, eps, lag
 
 
-def cvPSYwmboot(y, swindow0, IC, adflag, Tb, nboot=199):  
+def cvPSYwmboot(y, swindow0, IC, adflag, Tb, nboot=199):
     """
     Computes a matrix of 90, 95 and 99 critical values which can be used to compare to the bsadf statistics.
     param: y: data array or pandas df
