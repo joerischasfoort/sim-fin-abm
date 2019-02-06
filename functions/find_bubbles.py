@@ -48,9 +48,9 @@ def ADF(y, IC=0, adflag=0):
             # Information criteria
             npdf = sum(-1 / 2.0 * np.log(2 * np.pi) - 1 / 2.0 * (eps ** 2))
             if IC == 1:
-                ICC[k,] = -2 * npdf / float(t) + 2 * len(beta) / float(t)  # TODO check if correct
+                ICC[k, ] = -2 * npdf / float(t) + 2 * len(beta) / float(t)
             elif IC == 2:
-                ICC[k,] = -2 * npdf / float(t) + len(beta) * np.log(t) / float(t)
+                ICC[k, ] = -2 * npdf / float(t) + len(beta) * np.log(t) / float(t)
             se = np.dot(eps.T, eps / dof)
             sig = np.sqrt(np.diag((np.ones([len(beta), len(beta)]) * se) * np.linalg.solve(np.dot(x2.T, x2),
                                                                                            np.identity(
@@ -123,12 +123,74 @@ def PSY(y, swindow0, IC, adflag):
         bsadfs[r2 - 1] = max(rwadft.T[0])
 
     # create shortened version of array
-    bsadf = bsadfs[swindow0-1 : t] #TODO check if this is correct
+    bsadf = bsadfs[swindow0-1 : t]
 
     return bsadf
 
 
-def cvPSYwmboot(y, swindow0, adflag, control_sample_size, nboot=199, nCores=1):  # IC = 'BIC'
+def ADFres(y, IC=0, adflag=0):
+    """"""
+    T0 = len(y)
+    T1 = len(y) - 1
+
+    y1 = np.array(y[0:T1])
+    y0 = np.array(y[1:T0])
+    dy = y0 - y1
+    t = T1 - adflag
+
+    if IC > 0:
+        ICC = np.zeros([adflag + 1, 1])
+        betaM = []  # np.zeros([adflag + 1, 1])
+        epsM = []  # np.zeros([adflag + 1, 1])
+        for k in range(adflag + 1):
+            dy01 = dy[k:T1, ]
+            x_temp = np.zeros([T1 - k, k])
+
+            for j in range(k):
+                x_temp[:, j] = dy[k - j - 1:T1 - j - 1]
+
+            x2 = np.ones([T1 - k, k + 1])
+            x2[:, 1:] = x_temp
+
+            # OLS regression time
+            betaM.append(
+                np.dot(np.linalg.solve(np.dot(x2.T, x2), np.identity(len(np.dot(x2.T, x2)))), np.dot(x2.T, dy01)))
+            epsM.append(dy01 - np.dot(x2, betaM[k]))
+
+            # Information criteria
+            npdf = sum(-1 / 2.0 * np.log(2 * np.pi) - 1 / 2.0 * (epsM[k] ** 2))
+            if IC == 1:
+                ICC[k] = -2 * npdf / float(t) + 2 * len(betaM[k]) / float(t)
+            elif IC == 2:
+                ICC[k] = -2 * npdf / float(t) + len(betaM[k]) * np.log(t) / float(t)
+
+        lag0 = np.argmin(ICC)
+        beta = betaM[lag0]
+        eps = epsM[lag0]
+        lag = lag0
+
+    elif IC == 0:
+        dy01 = dy[adflag:T1, ]
+        x_temp = np.zeros([t, adflag])
+
+        for j in range(adflag):
+            x_temp[:, j] = dy[adflag - j - 1:T1 - j - 1]
+
+        x2 = np.ones([T1 - k, k + 1])
+        x2[:, 1:] = x_temp
+
+        # OLS regression
+        beta = np.dot(np.linalg.solve(np.dot(x2.T, x2), np.identity(len(np.dot(x2.T, x2)))), np.dot(x2.T, dy01))
+        eps = dy01 - np.dot(x2, beta)
+        lag = adflag
+
+    else:
+        beta, eps, lag = None
+
+    return beta, eps, lag
+
+
+def cvPSYwmboot(y, swindow0, IC, adflag, Tb, nboot=199):  
     """
     Computes a matrix of 90, 95 and 99 critical values which can be used to compare to the bsadf statistics.
     param: y: data array or pandas df
@@ -139,75 +201,65 @@ def cvPSYwmboot(y, swindow0, adflag, control_sample_size, nboot=199, nCores=1): 
     param: nCores = integernumber of cores (supports multithreading
     return: A matrix. BSADF bootstrap critical value sequence at the 90, 95 and 99 percent level.
     """
-    confidence_levels =  np.array([0.90, 0.95, 0.99])
+    qe = np.array([0.90, 0.95, 0.99])
 
-    result = adfuller(y, maxlag=adflag, regression="c", autolag='BIC', store=True, regresults=True)[-1].resols # list of ADF [beta, errors, lag]
-    beta = result.params
-    eps = result.resid
-    lag = adflag
+    beta, eps, lag = ADFres(y, IC, adflag)
 
     T0 = len(eps)
     t = len(y)
-    dy = np.array(y.iloc[0:(t - 1)]) - np.array(y.iloc[1:t]) #difference of the data
+    dy = np.array(y.iloc[0:(t - 1)]) - np.array(y.iloc[1:t])
     g = len(beta)
 
-    if not swindow0:
-        swindow0 = math.floor(t * (0.01 + 1.8 / np.sqrt(t)))
-
-    # The Data generating process (DGP)
-    np.random.seed(101)
     # create matrix filled with random ints < T0 with rows TB and cols: nboot
-    random_numbers = np.random.randint(0, T0, (control_sample_size, nboot))
-    # create matrix filled with random normal floats with rows TB and cols: nboot
-    random_normal_numbers = np.random.normal(1, size=(control_sample_size, nboot))
+    rN = np.random.randint(0, T0, (Tb, nboot))
+    # create weigth matrix filled a random normal float
+    wn = np.random.normal(0) * np.ones([Tb, nboot])
 
-    dyb = np.zeros([control_sample_size - 1, nboot])
-    dyb[:lag, ] = np.split(np.tile(dy[:lag], nboot), lag, axis=0) # make the first six rows equal to a repeat of the differences of that lag
+    # dyb = 69 row, 99 col matrix of zeros
+    dyb = np.zeros([Tb - 1, nboot])
+    # fill first 6 rows with first six
+    dyb[:lag + 1, ] = np.split(np.tile(dy[[l for l in range(lag + 1)]], nboot), lag + 1, axis=0)
 
     for j in range(nboot):
         # loop over all columns
         if lag == 0:
-            for i in range(lag + 1, control_sample_size - 1):
-                # loop over rows, start filling the rest of the rowswith random numbers
-                dyb[i, j] = random_normal_numbers[i - lag, j] * eps[random_numbers[i - lag, j]]
-
+            for i in range(lag, Tb - 1):
+                # loop over rows, start filling the rest of the dyb rows with random numbers
+                dyb[i, j] = wn[i - lag, j] * eps[rN[i - lag, j]]
         elif lag > 0:
-            #x = np.zeros([control_sample_size - 1, lag])
-            for i in range(lag + 1, control_sample_size - 1):
-                x = np.zeros([control_sample_size - 1, lag])
+            x = np.zeros([Tb - 1, lag])
+            for i in range(lag, Tb - 1):
+                # create a new empy array of simlar proportions to dyb
+                x = np.zeros([Tb - 1, lag])
                 for k in range(lag):
-                    x[i, k] = dyb[(i - k), j]
+                    # every row after the first 6, fill the first six column values with
+                    # values of the dyb six rows that came before it
+                    x[i, k] = dyb[i - k, j]
 
                 # matrix multiplication
-                dyb[i, j] = np.dot(x[i, ], beta[2:g, 1]) + random_normal_numbers[i - lag, j] * eps[random_numbers[i - lag, j]]
+                # fill the rows below the first 6 with
+                # the i row of x *
+                dyb[i, j] = np.dot(x[i,], beta[1:g]) + wn[i - lag, j] * eps[rN[i - lag, j]]
 
+    dyb0 = np.ones([Tb, nboot]) * y[1]
+    dyb0[1:, :] = dyb
+    yb = np.cumsum(dyb0, axis=0)
 
-    yb0 = np.repeat(y[1], repeats=nboot)
-    dyb0 = np.concatenate(yb0, dyb)
-    yb = apply(dyb0, 2, np.cumsum)
+    dim = Tb - swindow0 + 1
+    i = 0
 
-    # The PSY Test ------------------------------------------------------------
+    # for every .. column perform PSY, since there are 99 columns...
+    # this gives a new matrix with 24 columns and 4 rows... so every row= ser
+    MPSY = []
+    for col in range(nboot):
+        MPSY.append(PSY(pd.Series(yb[:, col]), swindow0, IC, adflag))
 
-    # setup parallel backend to use many processors
-    if nCores > 1:
-        nCores = nCores
-    else:
-        nCores = 1
+    MPSY = np.array(MPSY)
+    # then, find the max value for each point in time?
+    SPSY = MPSY.max(axis=1)
+    # then, find the quantile for each
+    Q_SPSY = pd.Series(SPSY.T[0]).quantile(qe)
 
-    #cl = makeCluster(nCores)
-    #registerDoParallel(cl)
-
-    # # ----------------------------------
-    # dim = Tb - swindow0 + 1
-    # i = 0
-    #
-    # MPSY = foreach(i=1:nboot, .inorder = FALSE, .combine = rbind) % dopar %:
-    #     PSY(yb[, i], swindow0, IC, adflag)
-    #
-    # SPSY = apply(MPSY, 1, max()) # apply MPSY function
-    # Q_SPSY = np.quantile(SPSY, confidence_levels)
-
-    #return Q_SPSY
-    pass
+    return Q_SPSY
 
 
