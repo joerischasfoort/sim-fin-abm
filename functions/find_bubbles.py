@@ -263,3 +263,77 @@ def cvPSYwmboot(y, swindow0, IC, adflag, Tb, nboot=199):
     return Q_SPSY
 
 
+def is_end_date(value, next_value):
+    """determine if this is the end date of a time series"""
+    if value != next_value - 1:
+        return True
+    else:
+        return False
+
+
+def is_start_date(value, previous_value):
+    """determine if this is the start date of a time series."""
+    if value != previous_value + 1:
+        return True
+    else:
+        return False
+
+
+def find_sequences_datetime(p, md):
+    """
+    Transform bubble occurence time sequences to a series of sequences
+    :param p: list of periods with bubbles in date string format
+    :param md: list of all dates of interest
+    :return: Dataframe with start and end dates of a bubble.
+    """
+    all_dates = pd.to_datetime(md)
+
+    locs = []
+    for idx, date in enumerate(p):
+        locs.append((all_dates == date).argmax())
+
+    end_dates = [is_end_date(value, next_value) for value, next_value in zip(locs[:-1], locs[1:])] + [True]
+    start_dates = [True] + [is_start_date(value, previous_value) for value, previous_value in zip(locs[1:], locs[:-1])]
+
+    end_locs = np.array(locs)[np.array(end_dates)]
+    start_locs = np.array(locs)[np.array(start_dates)]
+
+    return pd.DataFrame({'end_date': all_dates[[end_locs]], 'start_date': all_dates[[start_locs]]})[
+        ['start_date', 'end_date']]
+
+
+def find_sequences_ints(p, md):
+    """
+    Transform bubble occurence time sequences of ints to a series of sequences
+    :param p: list of periods with bubbles in date string format
+    :param md: list of all dates of interest
+    :return: Dataframe with start and end dates of a bubble.
+    """
+    locs = []
+    for date in p:
+        locs.append((md == date).argmax())
+
+    end_dates = [is_end_date(value, next_value) for value, next_value in zip(locs[:-1], locs[1:])] + [True]
+    start_dates = [True] + [is_start_date(value, previous_value) for value, previous_value in zip(locs[1:], locs[:-1])]
+
+    end_locs = np.array(locs)[np.array(end_dates)]
+    start_locs = np.array(locs)[np.array(start_dates)]
+
+    return pd.DataFrame({'end_date': md[[end_locs]], 'start_date': md[[start_locs]]})[
+        ['start_date', 'end_date']]
+
+
+def bubble_period(all_dates, bubbly_date_serie):
+    """
+    Return all dates of a single bubble period given a start, end date and the full time series
+    :param all_dates: list of all dates
+    :param bubbly_date_serie: list of dates in which there was a bubble.
+    :return:
+    """
+    first_date = (all_dates == bubbly_date_serie['start_date']).argmax()
+    second_date = (all_dates == bubbly_date_serie['end_date']).argmax()
+
+    if first_date == second_date:
+        return all_dates[first_date-2:first_date]
+    else:
+        return all_dates[first_date:second_date + 1]
