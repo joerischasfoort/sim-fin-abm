@@ -3,6 +3,8 @@ import time
 from multiprocessing import Pool
 import json
 import numpy as np
+import math
+from functions.find_bubbles import *
 
 np.seterr(all='ignore')
 
@@ -10,21 +12,21 @@ start_time = time.time()
 
 # INPUT PARAMETERS
 LATIN_NUMBER = 0
-NRUNS = 4
+NRUNS = 2
 CORES = NRUNS # set the amount of cores equal to the amount of runs
 
 problem = {
-  'num_vars': 10,
-  'names': ['trader_sample_size', 'std_noise',
+  'num_vars': 7,
+  'names': ['std_noise',
             'w_fundamentalists', 'w_momentum',
             'base_risk_aversion',
-            'horizon', "fundamentalist_horizon_multiplier",
-            "trades_per_tick", "mutation_probability",
+            "fundamentalist_horizon_multiplier",
+            "mutation_probability",
             "average_learning_ability"],
-  'bounds': [[2, 30], [0.05, 0.30],
+  'bounds': [[0.05, 0.30],
              [0.0, 100.0], [0.0, 100.0],
              [0.1, 15.0],
-             [100, 300], [0.1, 1.0], [1, 4], [0.1, 0.9],
+             [0.1, 1.0], [0.1, 0.9],
              [0.1, 1.0]]
 }
 
@@ -37,8 +39,9 @@ UB = [x[1] for x in problem['bounds']]
 
 init_parameters = latin_hyper_cube[LATIN_NUMBER]
 
-params = {"ticks": 25160, "fundamental_value": 166, 'n_traders': 500, 'std_fundamental': 0.0530163128919286,
-                  'spread_max': 0.004087, "w_random": 1.0, "init_stocks": 50}  # TODO make ticks: 2516 * 10
+params = {"ticks": 600, "fundamental_value": 166, 'n_traders': 500, 'std_fundamental': 0.0530163128919286,
+          'spread_max': 0.004087, "w_random": 1.0, "init_stocks": 50, 'trader_sample_size': 19,
+          'horizon': 200, "trades_per_tick": 2}  # TODO make ticks: 600 * 10
 
 
 def simulate_a_seed(seed_params):
@@ -58,49 +61,65 @@ def simulate_a_seed(seed_params):
     mc_prices, mc_returns, mc_autocorr_returns, mc_autocorr_abs_returns, mc_volatility, mc_volume, mc_fundamentals = organise_data(
         obs)
 
+    obs = len(mc_fundamentals[0])
+    r0 = 0.01 + 1.8 / np.sqrt(obs)
+    swindow0 = int(math.floor(r0 * obs))
+    dim = obs - swindow0 + 1
+    IC = 2
+    adflag = 6
+    yr = 2
+    Tb = 12 * yr + swindow0 - 1
+    nboot = 99
+
     first_order_autocors = []
-    autocors1 = []
-    autocors5 = []
     mean_abs_autocor = []
     kurtoses = []
-    spy_abs_auto10 = []
-    spy_abs_auto25 = []
-    spy_abs_auto50 = []
-    spy_abs_auto100 = []
-    spy_abs_auto150 = []
-    spy_abs_auto200 = []
-    for col in mc_returns:
+    perc_bubble_occur = []
+    av_lenghts_of_bubbles = []
+    stdev_lenghts_bubbles = []
+    skews_lenghts_bubbles = []
+    kurt_lengths_bubbles = []
+
+    for idx, col in enumerate(mc_returns):
         first_order_autocors.append(autocorrelation_returns(mc_returns[col][1:], 25))
-        autocors1.append(mc_returns[col][1:].autocorr(lag=1))
-        autocors5.append(mc_returns[col][1:].autocorr(lag=5))
         mean_abs_autocor.append(autocorrelation_abs_returns(mc_returns[col][1:], 25))
         kurtoses.append(mc_returns[col][2:].kurtosis())
-        spy_abs_auto10.append(mc_returns[col][1:].abs().autocorr(lag=10))
-        spy_abs_auto25.append(mc_returns[col][1:].abs().autocorr(lag=25))
-        spy_abs_auto50.append(mc_returns[col][1:].abs().autocorr(lag=50))
-        spy_abs_auto100.append(mc_returns[col][1:].abs().autocorr(lag=100))
-        spy_abs_auto150.append(mc_returns[col][1:].abs().autocorr(lag=150))
-        spy_abs_auto200.append(mc_returns[col][1:].abs().autocorr(lag=200))
+        # calc bubble stats
+        pds = pd.Series(mc_prices[idx][:-1] / mc_fundamentals[idx])
 
-    stylized_facts_sim = np.array([
-        np.mean(first_order_autocors),
-        np.mean(autocors1),
-        np.mean(autocors5),
-        np.mean(mean_abs_autocor),
-        np.mean(kurtoses),
-        np.mean(spy_abs_auto10),
-        np.mean(spy_abs_auto25),
-        np.mean(spy_abs_auto50),
-        np.mean(spy_abs_auto100),
-        np.mean(spy_abs_auto150),
-        np.mean(spy_abs_auto200)
-    ])
+        obs = len(pds)
+        bsadfs = PSY(pds, swindow0, IC, adflag)
+        quantilesBsadf = cvPSYwmboot(pds, swindow0, IC, adflag, Tb, nboot)
+        monitorDates = pds.iloc[swindow0 - 1:obs].index
+        quantile95 = np.dot(np.array([quantilesBsadf]).T, np.ones([1, dim]))
+        ind95 = (bsadfs.T[0] > quantile95[1,])
+        periods = monitorDates[ind95]
+
+        bubbly_dates = find_sequences_ints(periods, monitorDates)
+
+        perc_bubble_occur.append(len(periods) / float(len(monitorDates)))
+        lenghts_of_bubbles = []
+        for row in range(len(bubbly_dates)):
+            lenghts_of_bubbles.append(bubbly_dates.iloc[row]['end_date'] - bubbly_dates.iloc[row]['start_date'] + 1)
+        av_lenghts_of_bubbles.append(np.mean(lenghts_of_bubbles))
+        stdev_lenghts_bubbles.append(np.std(lenghts_of_bubbles))
+        skews_lenghts_bubbles.append(pd.Series(lenghts_of_bubbles).skew())
+        kurt_lengths_bubbles.append((pd.Series(lenghts_of_bubbles).kurtosis()))
+
+    stylized_facts_sim = np.array([np.mean(first_order_autocors),
+                                   np.mean(mean_abs_autocor),
+                                   np.mean(kurtoses),
+                                   np.mean(perc_bubble_occur),
+                                   np.mean(av_lenghts_of_bubbles),
+                                   np.mean(stdev_lenghts_bubbles),
+                                   np.mean(skews_lenghts_bubbles),
+                                   np.mean(kurt_lengths_bubbles)
+                                   ])
 
     W = np.load('distr_weighting_matrix.npy')  # if this doesn't work, use: np.identity(len(stylized_facts_sim))
 
-    empirical_moments = np.array([-7.91632942e-03, -6.44109792e-02, -5.17149408e-02, 2.15757804e-01,
-                                  4.99915089e+00, 2.29239806e-01, 1.36705815e-01, 8.99171488e-02, 3.97109985e-02,
-                                  4.56905198e-02, 3.40685479e-03])
+    empirical_moments = np.array([0.00985197, 0.05444708, 2.70795167, 0.13793103,
+                                  9.5, 5.55777733, 1.62209398, 2.59737727])
 
     # calculate the cost
     cost = quadratic_loss_function(stylized_facts_sim, empirical_moments, W)
@@ -117,22 +136,21 @@ def pool_handler():
         :param input_parameters: list of input parameters
         :return: average cost
         """
-        integer_var_locations = [0, 5, 7]
-        variable_names = ['trader_sample_size', 'std_noise', 'w_fundamentalists', 'w_momentum',
-                          'base_risk_aversion', 'horizon', "fundamentalist_horizon_multiplier",
-                          "trades_per_tick", "mutation_probability", "average_learning_ability"]
+        variable_names = ['std_noise',
+            'w_fundamentalists', 'w_momentum',
+            'base_risk_aversion',
+            "fundamentalist_horizon_multiplier",
+            "mutation_probability",
+            "average_learning_ability"]
 
         # convert relevant parameters to integers
         new_input_params = []
         for idx, par in enumerate(input_parameters):
-            if idx in integer_var_locations:
-                new_input_params.append(int(par))
-            else:
-                new_input_params.append(par)
+            new_input_params.append(par)
 
         # update params
         uncertain_parameters = dict(zip(variable_names, new_input_params))
-        params = {"ticks": 25160, "fundamental_value": 166, 'n_traders': 500, 'std_fundamental': 0.0530163128919286,
+        params = {"ticks": 600, "fundamental_value": 166, 'n_traders': 500, 'std_fundamental': 0.0530163128919286,
                   'spread_max': 0.004087, "w_random": 1.0, "init_stocks": 50}  # TODO make ticks: 2516 * 10
         params.update(uncertain_parameters)
 

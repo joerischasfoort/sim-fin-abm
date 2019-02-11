@@ -319,7 +319,7 @@ def find_sequences_ints(p, md):
     end_locs = np.array(locs)[np.array(end_dates)]
     start_locs = np.array(locs)[np.array(start_dates)]
 
-    return pd.DataFrame({'end_date': md[[end_locs]], 'start_date': md[[start_locs]]})[
+    return pd.DataFrame({'end_date': md[(end_locs)], 'start_date': md[(start_locs)]})[
         ['start_date', 'end_date']]
 
 
