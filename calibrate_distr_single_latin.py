@@ -11,7 +11,7 @@ np.seterr(all='ignore')
 start_time = time.time()
 
 # INPUT PARAMETERS
-LATIN_NUMBER = 0
+LATIN_NUMBER = 1
 NRUNS = 2
 CORES = NRUNS # set the amount of cores equal to the amount of runs
 
@@ -39,7 +39,7 @@ UB = [x[1] for x in problem['bounds']]
 
 init_parameters = latin_hyper_cube[LATIN_NUMBER]
 
-params = {"ticks": 600, "fundamental_value": 166, 'n_traders': 500, 'std_fundamental': 0.0530163128919286,
+params = {"ticks": 300, "fundamental_value": 166, 'n_traders': 500, 'std_fundamental': 0.0530163128919286,
           'spread_max': 0.004087, "w_random": 1.0, "init_stocks": 50, 'trader_sample_size': 19,
           'horizon': 200, "trades_per_tick": 2}  # TODO make ticks: 600 * 10
 
@@ -88,6 +88,8 @@ def simulate_a_seed(seed_params):
         pds = pd.Series(mc_prices[idx][:-1] / mc_fundamentals[idx])
 
         obs = len(pds)
+        dim = obs - swindow0 + 1
+
         bsadfs = PSY(pds, swindow0, IC, adflag)
         quantilesBsadf = cvPSYwmboot(pds, swindow0, IC, adflag, Tb, nboot)
         monitorDates = pds.iloc[swindow0 - 1:obs].index
@@ -118,8 +120,8 @@ def simulate_a_seed(seed_params):
 
     W = np.load('distr_weighting_matrix.npy')  # if this doesn't work, use: np.identity(len(stylized_facts_sim))
 
-    empirical_moments = np.array([0.00985197, 0.05444708, 2.70795167, 0.13793103,
-                                  9.5, 5.55777733, 1.62209398, 2.59737727])
+    empirical_moments = np.array([0.0094336,  0.05371445,  2.67297082,  0.08876812,  6.125,
+                                  5.34877322,  0.83048364, -0.91551026])
 
     # calculate the cost
     cost = quadratic_loss_function(stylized_facts_sim, empirical_moments, W)
@@ -136,12 +138,9 @@ def pool_handler():
         :param input_parameters: list of input parameters
         :return: average cost
         """
-        variable_names = ['std_noise',
-            'w_fundamentalists', 'w_momentum',
-            'base_risk_aversion',
-            "fundamentalist_horizon_multiplier",
-            "mutation_probability",
-            "average_learning_ability"]
+        variable_names = ['std_noise', 'w_fundamentalists', 'w_momentum',
+                          'base_risk_aversion', "fundamentalist_horizon_multiplier",
+                          "mutation_probability", "average_learning_ability"]
 
         # convert relevant parameters to integers
         new_input_params = []
@@ -150,8 +149,9 @@ def pool_handler():
 
         # update params
         uncertain_parameters = dict(zip(variable_names, new_input_params))
-        params = {"ticks": 600, "fundamental_value": 166, 'n_traders': 500, 'std_fundamental': 0.0530163128919286,
-                  'spread_max': 0.004087, "w_random": 1.0, "init_stocks": 50}  # TODO make ticks: 2516 * 10
+        params = {"ticks": 300, "fundamental_value": 166, 'n_traders': 500, 'std_fundamental': 0.0530163128919286,
+                  'spread_max': 0.004087, "w_random": 1.0, "init_stocks": 50, 'trader_sample_size': 19,
+                  'horizon': 200, "trades_per_tick": 2}  # TODO make ticks: 600 * 10
         params.update(uncertain_parameters)
 
         list_of_seeds_params = [[seed, params] for seed in list_of_seeds]
@@ -159,7 +159,7 @@ def pool_handler():
 
         return np.mean(costs)
 
-    output = constrNM(model_performance, init_parameters, LB, UB, maxiter=1, full_output=True)
+    output = constrNM(model_performance, init_parameters, LB, UB, maxiter=3, full_output=True)
 
     print('All outputs are: ', output)
 
