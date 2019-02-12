@@ -12,7 +12,7 @@ start_time = time.time()
 
 # INPUT PARAMETERS
 LATIN_NUMBER = 1
-NRUNS = 2
+NRUNS = 5
 CORES = NRUNS # set the amount of cores equal to the amount of runs
 
 problem = {
@@ -39,7 +39,7 @@ UB = [x[1] for x in problem['bounds']]
 
 init_parameters = latin_hyper_cube[LATIN_NUMBER]
 
-params = {"ticks": 300, "fundamental_value": 166, 'n_traders': 500, 'std_fundamental': 0.0530163128919286,
+params = {"ticks": 600, "fundamental_value": 166, 'n_traders': 500, 'std_fundamental': 0.0530163128919286,
           'spread_max': 0.004087, "w_random": 1.0, "init_stocks": 50, 'trader_sample_size': 19,
           'horizon': 200, "trades_per_tick": 2}  # TODO make ticks: 600 * 10
 
@@ -97,16 +97,29 @@ def simulate_a_seed(seed_params):
         ind95 = (bsadfs.T[0] > quantile95[1,])
         periods = monitorDates[ind95]
 
-        bubbly_dates = find_sequences_ints(periods, monitorDates)
+        # only proceed with calculating bubble statistics if there were any
+        if True in ind95:
+            bubbly_dates = find_sequences_ints(periods, monitorDates)
 
-        perc_bubble_occur.append(len(periods) / float(len(monitorDates)))
-        lenghts_of_bubbles = []
-        for row in range(len(bubbly_dates)):
-            lenghts_of_bubbles.append(bubbly_dates.iloc[row]['end_date'] - bubbly_dates.iloc[row]['start_date'] + 1)
-        av_lenghts_of_bubbles.append(np.mean(lenghts_of_bubbles))
-        stdev_lenghts_bubbles.append(np.std(lenghts_of_bubbles))
-        skews_lenghts_bubbles.append(pd.Series(lenghts_of_bubbles).skew())
-        kurt_lengths_bubbles.append((pd.Series(lenghts_of_bubbles).kurtosis()))
+            perc_bubble_occur.append(len(periods) / float(len(monitorDates)))
+            lenghts_of_bubbles = []
+            for row in range(len(bubbly_dates)):
+                lenghts_of_bubbles.append(bubbly_dates.iloc[row]['end_date'] - bubbly_dates.iloc[row]['start_date'] + 1)
+            av_lenghts_of_bubbles.append(np.mean(lenghts_of_bubbles))
+            stdev_lenghts_bubbles.append(np.std(lenghts_of_bubbles))
+            skews_lenghts_bubbles.append(pd.Series(lenghts_of_bubbles).skew())
+            kurt_lengths_bubbles.append((pd.Series(lenghts_of_bubbles).kurtosis()))
+
+        else:
+            perc_bubble_occur.append(0.0)
+            av_lenghts_of_bubbles.append(0.0)
+            stdev_lenghts_bubbles.append(0.0)
+            skews_lenghts_bubbles.append(0.0)
+            kurt_lengths_bubbles.append(0.0)
+
+    # replace NaN value of skew and kurtosis by zero (it is possible there were not enough bubbles to calc these so I assume a normal distribution)
+    skews_lenghts_bubbles = list(pd.Series(skews_lenghts_bubbles).fillna(0.0))
+    kurt_lengths_bubbles = list(pd.Series(kurt_lengths_bubbles).fillna(0.0))
 
     stylized_facts_sim = np.array([np.mean(first_order_autocors),
                                    np.mean(mean_abs_autocor),
@@ -149,13 +162,18 @@ def pool_handler():
 
         # update params
         uncertain_parameters = dict(zip(variable_names, new_input_params))
-        params = {"ticks": 300, "fundamental_value": 166, 'n_traders': 500, 'std_fundamental': 0.0530163128919286,
+        params = {"ticks": 600, "fundamental_value": 166, 'n_traders': 500, 'std_fundamental': 0.0530163128919286,
                   'spread_max': 0.004087, "w_random": 1.0, "init_stocks": 50, 'trader_sample_size': 19,
                   'horizon': 200, "trades_per_tick": 2}  # TODO make ticks: 600 * 10
         params.update(uncertain_parameters)
 
         list_of_seeds_params = [[seed, params] for seed in list_of_seeds]
-        costs = p.map(simulate_a_seed, list_of_seeds_params) # first argument is function to execute, second argument is tuple of all inputs
+
+        # costs = []
+        # for seed_par in list_of_seeds_params:
+        #     costs.append(simulate_a_seed(seed_par))
+
+        costs = p.map(simulate_a_seed, list_of_seeds_params) # first argument is function to execute, second argument is tuple of all inputs TODO uncomment this
 
         return np.mean(costs)
 
