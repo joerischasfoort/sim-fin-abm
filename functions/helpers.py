@@ -94,7 +94,7 @@ def hurst(ts):
     return poly[0]*2.0
 
 
-def organise_data(obs, burn_in_period=100):
+def organise_data(obs, burn_in_period=0):
     """
     Extract data in manageable format from list of orderbooks
     :param obs: object limit-orderbook

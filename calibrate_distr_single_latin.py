@@ -13,6 +13,7 @@ start_time = time.time()
 # INPUT PARAMETERS
 LATIN_NUMBER = 1
 NRUNS = 5
+BURN_IN = 300
 CORES = NRUNS # set the amount of cores equal to the amount of runs
 
 problem = {
@@ -39,7 +40,7 @@ UB = [x[1] for x in problem['bounds']]
 
 init_parameters = latin_hyper_cube[LATIN_NUMBER]
 
-params = {"ticks": 600, "fundamental_value": 166, 'n_traders': 500, 'std_fundamental': 0.0530163128919286,
+params = {"ticks": 600 + BURN_IN, "fundamental_value": 166, 'n_traders': 500, 'std_fundamental': 0.0530163128919286,
           'spread_max': 0.004087, "w_random": 1.0, "init_stocks": 50, 'trader_sample_size': 19,
           'horizon': 200, "trades_per_tick": 2}  # TODO make ticks: 600 * 10
 
@@ -59,7 +60,7 @@ def simulate_a_seed(seed_params):
 
     # store simulated stylized facts
     mc_prices, mc_returns, mc_autocorr_returns, mc_autocorr_abs_returns, mc_volatility, mc_volume, mc_fundamentals = organise_data(
-        obs)
+        obs, burn_in_period=BURN_IN)
 
     obs = len(mc_fundamentals[0])
     r0 = 0.01 + 1.8 / np.sqrt(obs)

@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 import math
-from statsmodels.tsa.stattools import adfuller
 
 
 def ADF(y, IC=0, adflag=0):
@@ -176,7 +175,7 @@ def ADFres(y, IC=0, adflag=0):
         for j in range(adflag):
             x_temp[:, j] = dy[adflag - j - 1:T1 - j - 1]
 
-        x2 = np.ones([T1 - k, k + 1])
+        x2 = np.ones([T1 - adflag, adflag + 1]) #TODO debug this line
         x2[:, 1:] = x_temp
 
         # OLS regression
@@ -298,7 +297,7 @@ def find_sequences_datetime(p, md):
     end_locs = np.array(locs)[np.array(end_dates)]
     start_locs = np.array(locs)[np.array(start_dates)]
 
-    return pd.DataFrame({'end_date': all_dates[[end_locs]], 'start_date': all_dates[[start_locs]]})[
+    return pd.DataFrame({'end_date': all_dates[(end_locs)], 'start_date': all_dates[(start_locs)]})[
         ['start_date', 'end_date']]
 
 
