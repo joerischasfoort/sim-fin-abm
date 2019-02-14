@@ -163,7 +163,7 @@ def pool_handler():
 
         # update params
         uncertain_parameters = dict(zip(variable_names, new_input_params))
-        params = {"ticks": 600, "fundamental_value": 166, 'n_traders': 500, 'std_fundamental': 0.0530163128919286,
+        params = {"ticks": 600 + BURN_IN, "fundamental_value": 166, 'n_traders': 500, 'std_fundamental': 0.0530163128919286,
                   'spread_max': 0.004087, "w_random": 1.0, "init_stocks": 50, 'trader_sample_size': 19,
                   'horizon': 200, "trades_per_tick": 2}  # TODO make ticks: 600 * 10
         params.update(uncertain_parameters)
