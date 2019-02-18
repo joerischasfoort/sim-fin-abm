@@ -13,7 +13,7 @@ start_time = time.time()
 # INPUT PARAMETERS
 LATIN_NUMBER = 1
 NRUNS = 5
-BURN_IN = 300
+BURN_IN = 400
 CORES = NRUNS # set the amount of cores equal to the amount of runs
 
 problem = {
@@ -40,9 +40,9 @@ UB = [x[1] for x in problem['bounds']]
 
 init_parameters = latin_hyper_cube[LATIN_NUMBER]
 
-params = {"ticks": 600 + BURN_IN, "fundamental_value": 166, 'n_traders': 500, 'std_fundamental': 0.0530163128919286,
+params = {"ticks": 1200 + BURN_IN, "fundamental_value": 166, 'n_traders': 500, 'std_fundamental': 0.0530163128919286,
           'spread_max': 0.004087, "w_random": 1.0, "init_stocks": 50, 'trader_sample_size': 19,
-          'horizon': 200, "trades_per_tick": 2}  # TODO make ticks: 600 * 10
+          'horizon': 200, "trades_per_tick": 2}
 
 
 def simulate_a_seed(seed_params):
@@ -112,11 +112,11 @@ def simulate_a_seed(seed_params):
             kurt_lengths_bubbles.append((pd.Series(lenghts_of_bubbles).kurtosis()))
 
         else:
-            perc_bubble_occur.append(0.0)
-            av_lenghts_of_bubbles.append(0.0)
-            stdev_lenghts_bubbles.append(0.0)
-            skews_lenghts_bubbles.append(0.0)
-            kurt_lengths_bubbles.append(0.0)
+            perc_bubble_occur.append(np.inf)
+            av_lenghts_of_bubbles.append(np.inf)
+            stdev_lenghts_bubbles.append(np.inf)
+            skews_lenghts_bubbles.append(np.inf)
+            kurt_lengths_bubbles.append(np.inf)
 
     # replace NaN value of skew and kurtosis by zero (it is possible there were not enough bubbles to calc these so I assume a normal distribution)
     skews_lenghts_bubbles = list(pd.Series(skews_lenghts_bubbles).fillna(0.0))
