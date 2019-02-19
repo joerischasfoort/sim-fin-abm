@@ -336,3 +336,15 @@ def bubble_period(all_dates, bubbly_date_serie):
         return all_dates[first_date-2:first_date]
     else:
         return all_dates[first_date:second_date + 1]
+
+
+def p_bubbles(bubbly_dates):
+    lenghts_of_bubbles = []
+    for row in range(len(bubbly_dates)):
+        lenghts_of_bubbles.append(bubbly_dates.iloc[row]['end_date'] - bubbly_dates.iloc[row]['start_date'] + 1)
+    lenghts_of_bubbles = np.array(lenghts_of_bubbles)
+    av_lenghts_of_bubbles = np.mean(lenghts_of_bubbles)
+    long_bubble_condition = lenghts_of_bubbles > av_lenghts_of_bubbles
+    r = np.array(range(len(long_bubble_condition)))
+    locs_long_bubbles = r[long_bubble_condition]
+    return locs_long_bubbles
