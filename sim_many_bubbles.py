@@ -11,8 +11,8 @@ np.seterr(all='ignore')
 
 start_time = time.time()
 
-NRUNS = 1
-CORES = 1 # set the amount of cores equal to the amount of runs
+NRUNS = 4
+CORES = 4 # set the amount of cores equal to the amount of runs
 
 
 def sim_bubble_info(seed):
@@ -30,12 +30,12 @@ def sim_bubble_info(seed):
     with open('parameters.json', 'r') as f:
         params = json.loads(f.read())
     # simulate model once
-    traders = []
+    #traders = []
     obs = []
     # run model with parameters
     traders, orderbook = init_objects_distr(params, seed)
     traders, orderbook = pb_distr_model(traders, orderbook, params, seed)
-    traders.append(traders)
+    #traders.append(traders)
     obs.append(orderbook)
 
     # store simulated stylized facts
@@ -56,6 +56,7 @@ def sim_bubble_info(seed):
 
     # calc bubbles
     bsadfs = PSY(y, swindow0, IC, adflag)
+
     quantilesBsadf = cvPSYwmboot(y, swindow0, IC, adflag, Tb, nboot=99)
 
     monitorDates = y.iloc[swindow0 - 1:obs].index
@@ -123,20 +124,24 @@ def sim_bubble_info(seed):
 
                 wealth_gini_over_time.append(gini(wealth))
 
-            bubble_prices.append(mc_prices[0].iloc[start_dates[l]: end_dates[l]])
-            wealth_starts.append(wealth_start)
-            wealth_ends.append(wealth_end)
+            bubble_prices.append(list(mc_prices[0].iloc[start_dates[l]: end_dates[l]]))
+            wealth_starts.append(list(wealth_start))
+            wealth_ends.append(list(wealth_end))
             ginis_ot.append(wealth_gini_over_time)
             palmas_ot.append(palma_over_time)
             twtws_ot.append(twentytwenty_over_time)
 
     return bubble_types, bubble_prices, wealth_starts, wealth_ends, ginis_ot, palmas_ot, twtws_ot
 
+
 def pool_handler():
     p = Pool(CORES) # argument is how many process happening in parallel
     list_of_seeds = [x for x in range(NRUNS)]
 
     output = p.map(sim_bubble_info, list_of_seeds)
+
+    with open('many_bubbles_output.json', 'w') as fp:
+        json.dump(output, fp)
 
     print('All outputs are: ', output)
 
