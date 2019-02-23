@@ -12,10 +12,11 @@ def pool_handler():
     p = Pool(CORES) # argument is how many process happening in parallel
     list_of_seeds = [x for x in range(NRUNS)]
 
+    for x in range(0, 17):
+        output = sim_synthetic_bubble(x)
+    #output = p.map(sim_synthetic_bubble, list_of_seeds)
 
-    output = p.map(sim_bubble_info, list_of_seeds)
-
-    with open('all_many_bubbles_output.json', 'w') as fp:
+    with open('shocked_bubbles_output.json', 'w') as fp:
         json.dump(output, fp)
 
     print('All outputs are: ', output)
@@ -24,7 +25,7 @@ def pool_handler():
 if __name__ == '__main__':
     start_time = time.time()
 
-    NRUNS = 8
+    NRUNS = 24
     CORES = 4  # set the amount of cores equal to the amount of runs
 
     pool_handler()

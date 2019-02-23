@@ -451,8 +451,8 @@ def sim_bubble_info(seed):
                     share_bottom_40 = sum(np.sort(wealth)[:int(len(wealth) * 0.4)]) / sum(wealth)
                     palma_over_time.append(share_top_10 / share_bottom_40)
 
-                    share_top_20 = np.mean(np.sort(wealth)[int(len(wealth) * 0.8):])
-                    share_bottom_20 = np.mean(np.sort(wealth)[:int(len(wealth) * 0.2)])
+                    share_top_20 = sum(np.mean(np.sort(wealth)[int(len(wealth) * 0.8):])) / sum(wealth)
+                    share_bottom_20 = sum(np.mean(np.sort(wealth)[:int(len(wealth) * 0.2)])) / sum(wealth)
                     twentytwenty_over_time.append(share_top_20 / share_bottom_20)
 
                     wealth_gini_over_time.append(gini(wealth))
@@ -518,3 +518,175 @@ def sim_bubble_info(seed):
             twtws_ot.append(twentytwenty_over_time)
 
     return bubble_types, bubble_prices, wealth_starts, wealth_ends, ginis_ot, palmas_ot, twtws_ot
+
+
+def sim_synthetic_bubble(seed):
+    """
+    Simulate model once with a shock and return accompanying info on
+    - bubble_type
+    - bubble-episode price
+    - wealth_start
+    - wealth_end
+    + wealth_gini_over_time
+    + palma_over_time
+    + twentytwenty_over_time
+    """
+    BURN_IN = 200
+    SHOCK = 12000.0
+    SHOCK_PERIOD = 400
+
+    params = {"spread_max": 0.004087, "fundamental_value": 166, "fundamentalist_horizon_multiplier": 0.73132061,
+              "n_traders": 500, "w_fundamentalists": 37.20189844, "base_risk_aversion": 11.65898537,
+              "mutation_probability": 0.30623129, "init_stocks": 50, "trader_sample_size": 19, "ticks": 700,
+              "std_fundamental": 0.0530163128919286, "std_noise": 0.29985649, "trades_per_tick": 5,
+              "average_learning_ability": 0.57451773, "w_momentum": 0.01, "horizon": 200, "w_random": 1.0}
+
+    # simulate model once
+    obs = []
+    obs_no_shock = []
+    # run model with parameters
+    print('Simulate once')
+    traders, orderbook = init_objects_distr(params, seed)
+    traders, orderbook = pb_distr_model_shock(traders, orderbook, params, SHOCK, SHOCK_PERIOD, seed)
+    obs.append(orderbook)
+
+    traders_no_shock, orderbook_no_shock = init_objects_distr(params, seed)
+    traders_no_shock, orderbook_no_shock = pb_distr_model_shock(traders_no_shock, orderbook_no_shock, params, 0.0, SHOCK_PERIOD, seed)
+    obs_no_shock.append(orderbook)
+
+    # store simulated stylized facts
+    mc_prices, mc_returns, mc_autocorr_returns, mc_autocorr_abs_returns, mc_volatility, mc_volume, mc_fundamentals = organise_data(
+        obs, burn_in_period=BURN_IN)
+
+    mc_prices_ns, mc_returns_ns, mc_autocorr_returns_ns, mc_autocorr_abs_returns_ns, mc_volatility_ns, mc_volume_ns, mc_fundamentals_ns = organise_data(
+        obs_no_shock, burn_in_period=BURN_IN)
+
+    y = pd.Series(mc_prices[0][:-1] / mc_fundamentals[0])
+    y_ns = pd.Series(mc_prices_ns[0][:-1] / mc_fundamentals_ns[0])
+
+    obs = len(y)
+    r0 = 0.01 + 1.8 / np.sqrt(obs)
+    swindow0 = int(math.floor(r0 * obs))
+    dim = obs - swindow0 + 1
+    IC = 2
+    adflag = 6
+    yr = 2
+    Tb = 12 * yr + swindow0 - 1
+    nboot = 99
+
+    # calc bubbles
+    bsadfs = PSY(y, swindow0, IC, adflag)
+
+    quantilesBsadf = cvPSYwmboot(y, swindow0, IC, adflag, Tb, nboot=99)
+
+    monitorDates = y.iloc[swindow0 - 1:obs].index
+    quantile95 = np.dot(np.array([quantilesBsadf]).T, np.ones([1, dim]))
+    ind95 = (bsadfs.T[0] > quantile95[1,])
+    periods = monitorDates[ind95]
+
+    bubble_types = []
+    bubble_prices = []
+    wealth_starts = []
+    wealth_ends = []
+    ginis_ot = []
+    palmas_ot = []
+    twtws_ot = []
+
+    bubble_prices_ns = []
+    wealth_ends_ns = []
+    ginis_ot_ns = []
+    palmas_ot_ns = []
+    twtws_ot_ns = []
+
+    if True in ind95:
+        bubbly_dates = find_sequences_ints(periods, monitorDates)
+        proper_bubbles = bubbly_dates.iloc[p_bubbles(bubbly_dates)]
+
+        # classify the bubbles
+        start_dates = []
+        end_dates = []
+
+        # then add the first bubble episodes
+        start_dates.append(proper_bubbles.iloc[0]['start_date'])
+        end_dates.append(proper_bubbles.iloc[0]['end_date'])
+
+        if abs(y[end_dates[0]] - y[start_dates[0]]) > y[:end_dates[0]].std():
+            # classify as boom or bust
+            if y[start_dates[0]] > y[end_dates[0]]:
+                bubble_type = 'bust'
+            else:
+                bubble_type = 'boom'
+        else:
+            if y[start_dates[0]:end_dates[0]].mean() > y[start_dates[0]]:
+                # classify as boom-bust or bust-boom
+                bubble_type = 'boom-bust'
+            else:
+                bubble_type = 'bust-boom'
+        bubble_types.append(bubble_type)
+
+        # determine the start and end wealth of the bubble
+        money_start = np.array([x.var.money[BURN_IN + start_dates[0]] for x in traders])
+        stocks_start = np.array([x.var.stocks[BURN_IN + start_dates[0]] for x in traders])
+        wealth_start = money_start + (stocks_start * mc_prices[0].iloc[start_dates[0]])
+
+        money_end = np.array([x.var.money[BURN_IN + end_dates[0]] for x in traders])
+        stocks_end = np.array([x.var.stocks[BURN_IN + end_dates[0]] for x in traders])
+        wealth_end = money_end + (stocks_end * mc_prices[0].iloc[end_dates[0]])
+
+        # track money + wealth no shocks  TODO check if this works
+        money_end_ns = np.array([x.var.money[BURN_IN + end_dates[0]] for x in traders_no_shock])
+        stocks_end_ns = np.array([x.var.stocks[BURN_IN + end_dates[0]] for x in traders_no_shock])
+        wealth_end_ns = money_end_ns + (stocks_end_ns * mc_prices_ns[0].iloc[end_dates[0]])
+
+        wealth_gini_over_time = []
+        palma_over_time = []
+        twentytwenty_over_time = []
+
+        # also record the gini etc. over time without the shock
+        wealth_gini_over_time_ns = []
+        palma_over_time_ns = []
+        twentytwenty_over_time_ns = []
+        for t in range(BURN_IN + start_dates[0], BURN_IN + end_dates[0]):
+            money = np.array([x.var.money[t] for x in traders])
+            stocks = np.array([x.var.stocks[t] for x in traders])
+            wealth = money + (stocks * orderbook.tick_close_price[t])
+
+            share_top_10 = sum(np.sort(wealth)[int(len(wealth) * 0.9):]) / sum(wealth)
+            share_bottom_40 = sum(np.sort(wealth)[:int(len(wealth) * 0.4)]) / sum(wealth)
+            palma_over_time.append(share_top_10 / share_bottom_40)
+
+            share_top_20 = sum(np.sort(wealth)[int(len(wealth) * 0.8):]) / sum(wealth)
+            share_bottom_20 = sum(np.sort(wealth)[:int(len(wealth) * 0.2)]) / sum(wealth)
+            twentytwenty_over_time.append(share_top_20 / share_bottom_20)
+
+            wealth_gini_over_time.append(gini(wealth))
+
+            # No shocks
+            money_ns = np.array([x.var.money[t] for x in traders_no_shock])
+            stocks_ns = np.array([x.var.stocks[t] for x in traders_no_shock])
+            wealth_ns = money_ns + (stocks_ns * orderbook_no_shock.tick_close_price[t])
+
+            share_top_10_ns = sum(np.sort(wealth_ns)[int(len(wealth_ns) * 0.9):]) / sum(wealth_ns)
+            share_bottom_40_ns = sum(np.sort(wealth_ns)[:int(len(wealth_ns) * 0.4)]) / sum(wealth_ns)
+            palma_over_time_ns.append(share_top_10_ns / share_bottom_40_ns)
+
+            share_top_20_ns = np.mean(np.sort(wealth_ns)[int(len(wealth_ns) * 0.8):])
+            share_bottom_20_ns = np.mean(np.sort(wealth_ns)[:int(len(wealth_ns) * 0.2)])
+            twentytwenty_over_time_ns.append(share_top_20_ns / share_bottom_20_ns)
+
+            wealth_gini_over_time_ns.append(gini(wealth_ns))
+
+        bubble_prices.append(list(mc_prices[0].iloc[start_dates[0]: end_dates[0]]))
+        wealth_starts.append(list(wealth_start))
+        wealth_ends.append(list(wealth_end))
+        ginis_ot.append(wealth_gini_over_time)
+        palmas_ot.append(palma_over_time)
+        twtws_ot.append(twentytwenty_over_time)
+
+        bubble_prices_ns.append(list(mc_prices_ns[0].iloc[start_dates[0]: end_dates[0]]))
+        wealth_ends_ns.append(list(wealth_end_ns))
+        ginis_ot_ns.append(wealth_gini_over_time_ns)
+        palmas_ot_ns.append(palma_over_time_ns)
+        twtws_ot_ns.append(twentytwenty_over_time_ns)
+
+    return bubble_types, bubble_prices, wealth_starts, wealth_ends, ginis_ot, palmas_ot, twtws_ot, bubble_prices_ns, wealth_ends_ns, ginis_ot_ns, palmas_ot_ns, twtws_ot_ns

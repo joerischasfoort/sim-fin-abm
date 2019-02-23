@@ -13,7 +13,7 @@ np.seterr(all='ignore')
 
 
 
-CORES = 20
+CORES = 4
 
 # open bootstrapped pd series from json file
 
