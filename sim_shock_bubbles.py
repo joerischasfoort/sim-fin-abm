@@ -12,9 +12,9 @@ def pool_handler():
     p = Pool(CORES) # argument is how many process happening in parallel
     list_of_seeds = [x for x in range(NRUNS)]
 
-    for x in range(0, 17):
-        output = sim_synthetic_bubble(x)
-    #output = p.map(sim_synthetic_bubble, list_of_seeds)
+    # for x in range(0, 17):
+    #     output = sim_synthetic_bubble(x)
+    output = p.map(sim_synthetic_bubble, list_of_seeds)
 
     with open('shocked_bubbles_output.json', 'w') as fp:
         json.dump(output, fp)

@@ -358,6 +358,7 @@ def p_bubbles(bubbly_dates):
 def sim_bubble_info(seed):
     """
     Simulate model once and return accompanying info on
+    Inequality:
     - bubble_type
     - bubble-episode price
     - wealth_start
@@ -365,6 +366,13 @@ def sim_bubble_info(seed):
     + wealth_gini_over_time
     + palma_over_time
     + twentytwenty_over_time
+
+    Information on agent characteristics
+    - risk aversion
+    - horizon
+    - learning ability
+    - chartist expectation
+    - fundamentalist expectation
     """
     BURN_IN = 400
     with open('parameters.json', 'r') as f:
@@ -412,6 +420,11 @@ def sim_bubble_info(seed):
     ginis_ot = []
     palmas_ot = []
     twtws_ot = []
+    risk_aversions = []
+    horizons = []
+    learning_abilities = []
+    chartist_expectations = []
+    fundamentalist_expectations = []
 
     if True in ind95:
         bubbly_dates = find_sequences_ints(periods, monitorDates)
@@ -421,50 +434,7 @@ def sim_bubble_info(seed):
         start_dates = []
         end_dates = []
 
-        # first add non-bubble episodes in between bubbles
-        if len(proper_bubbles) > 1:
-            for l in range(len(proper_bubbles) - 1):
-                start_dates.append(proper_bubbles.iloc[l]['end_date'] + 1)
-                end_dates.append(proper_bubbles.iloc[l + 1]['start_date'] - 1)
-
-                bubble_type = 'None'
-                bubble_types.append(bubble_type)
-
-                # determine the start and end wealth of the bubble
-                money_start = np.array([x.var.money[BURN_IN + start_dates[l]] for x in traders])
-                stocks_start = np.array([x.var.stocks[BURN_IN + start_dates[l]] for x in traders])
-                wealth_start = money_start + (stocks_start * mc_prices[0].iloc[start_dates[l]])
-
-                money_end = np.array([x.var.money[BURN_IN + end_dates[l]] for x in traders])
-                stocks_end = np.array([x.var.stocks[BURN_IN + end_dates[l]] for x in traders])
-                wealth_end = money_end + (stocks_end * mc_prices[0].iloc[end_dates[l]])
-
-                wealth_gini_over_time = []
-                palma_over_time = []
-                twentytwenty_over_time = []
-                for t in range(BURN_IN + start_dates[l], BURN_IN + end_dates[l]):
-                    money = np.array([x.var.money[t] for x in traders])
-                    stocks = np.array([x.var.stocks[t] for x in traders])
-                    wealth = money + (stocks * orderbook.tick_close_price[t])
-
-                    share_top_10 = sum(np.sort(wealth)[int(len(wealth) * 0.9):]) / sum(wealth)
-                    share_bottom_40 = sum(np.sort(wealth)[:int(len(wealth) * 0.4)]) / sum(wealth)
-                    palma_over_time.append(share_top_10 / share_bottom_40)
-
-                    share_top_20 = sum(np.mean(np.sort(wealth)[int(len(wealth) * 0.8):])) / sum(wealth)
-                    share_bottom_20 = sum(np.mean(np.sort(wealth)[:int(len(wealth) * 0.2)])) / sum(wealth)
-                    twentytwenty_over_time.append(share_top_20 / share_bottom_20)
-
-                    wealth_gini_over_time.append(gini(wealth))
-
-                bubble_prices.append(list(mc_prices[0].iloc[start_dates[l]: end_dates[l]]))
-                wealth_starts.append(list(wealth_start))
-                wealth_ends.append(list(wealth_end))
-                ginis_ot.append(wealth_gini_over_time)
-                palmas_ot.append(palma_over_time)
-                twtws_ot.append(twentytwenty_over_time)
-
-        # then add bubble episodes
+        # add bubble episodes
         for l in range(len(proper_bubbles)):
             start_dates.append(proper_bubbles.iloc[l]['start_date'])
             end_dates.append(proper_bubbles.iloc[l]['end_date'])
@@ -492,6 +462,14 @@ def sim_bubble_info(seed):
             stocks_end = np.array([x.var.stocks[BURN_IN + end_dates[l]] for x in traders])
             wealth_end = money_end + (stocks_end * mc_prices[0].iloc[end_dates[l]])
 
+            # determine characteristics of the agents
+            risk_aversions = [x.par.risk_aversion for x in traders]
+            horizons = [x.par.horizon for x in traders]
+            learning_abilities = [x.par.learning_ability for x in traders]
+            chartist_expectations = [list(np.array(x.var.weight_chartist)[BURN_IN + start_dates[l]: BURN_IN + end_dates[l]] * x.var.forecast_adjust) for x in traders]
+            fundamentalist_expectations = [list(np.array(x.var.weight_fundamentalist)[BURN_IN + start_dates[l]: BURN_IN + end_dates[l]] * x.var.forecast_adjust) for x in
+                                         traders]
+
             wealth_gini_over_time = []
             palma_over_time = []
             twentytwenty_over_time = []
@@ -517,7 +495,7 @@ def sim_bubble_info(seed):
             palmas_ot.append(palma_over_time)
             twtws_ot.append(twentytwenty_over_time)
 
-    return bubble_types, bubble_prices, wealth_starts, wealth_ends, ginis_ot, palmas_ot, twtws_ot
+    return bubble_types, bubble_prices, wealth_starts, wealth_ends, ginis_ot, palmas_ot, twtws_ot, risk_aversions, horizons, learning_abilities, chartist_expectations, fundamentalist_expectations
 
 
 def sim_synthetic_bubble(seed):

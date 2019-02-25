@@ -8,10 +8,7 @@ import json
 from functions.stylizedfacts import *
 import scipy.stats as stats
 
-
 np.seterr(all='ignore')
-
-
 
 CORES = 4
 
