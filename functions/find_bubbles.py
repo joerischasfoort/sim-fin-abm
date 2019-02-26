@@ -463,8 +463,8 @@ def sim_bubble_info(seed):
             wealth_end = money_end + (stocks_end * mc_prices[0].iloc[end_dates[l]])
 
             # determine characteristics of the agents
-            risk_aversions = [x.par.risk_aversion for x in traders]
-            horizons = [x.par.horizon for x in traders]
+            risk_aversions.append([x.par.risk_aversion for x in traders])
+            horizons.append([x.par.horizon for x in traders])
             learning_abilities.append([x.par.learning_ability for x in traders])
             chartist_expectations.append([list(np.array(x.var.weight_chartist)[BURN_IN + start_dates[l]: BURN_IN + end_dates[l]] * x.var.forecast_adjust) for x in traders])
             fundamentalist_expectations.append([list(np.array(x.var.weight_fundamentalist)[BURN_IN + start_dates[l]: BURN_IN + end_dates[l]] * x.var.forecast_adjust) for x in

@@ -17,7 +17,6 @@ def pb_distr_model(traders, orderbook, parameters, seed=1):
     random.seed(seed)
     np.random.seed(seed)
     fundamental = [parameters["fundamental_value"]]
-    # TODO the next can be done in a more elegant way
     orderbook.tick_close_price.append(fundamental[-1])
 
     for tick in range(parameters['horizon'] + 1, parameters["ticks"] + parameters['horizon'] + 1): # for init history
@@ -28,7 +27,7 @@ def pb_distr_model(traders, orderbook, parameters, seed=1):
         for trader in traders:
             trader.var.money.append(trader.var.money[-1])
             trader.var.stocks.append(trader.var.stocks[-1])
-            trader.var.wealth.append(trader.var.money[-1] + trader.var.stocks[-1] * orderbook.tick_close_price[-1]) # TODO debug
+            trader.var.wealth.append(trader.var.money[-1] + trader.var.stocks[-1] * orderbook.tick_close_price[-1])
             trader.var.weight_fundamentalist.append(trader.var.weight_fundamentalist[-1])
             trader.var.weight_chartist.append(trader.var.weight_chartist[-1])
             trader.var.weight_random.append(trader.var.weight_random[-1])
@@ -44,10 +43,10 @@ def pb_distr_model(traders, orderbook, parameters, seed=1):
             # select random sample of active traders
             active_traders = random.sample(traders, int((parameters['trader_sample_size'])))
 
-            mid_price = np.mean([orderbook.highest_bid_price, orderbook.lowest_ask_price]) #TODO debug
+            mid_price = np.mean([orderbook.highest_bid_price, orderbook.lowest_ask_price])
             fundamental_component = np.log(fundamental[-1] / mid_price)
 
-            orderbook.returns[-1] = (mid_price - orderbook.tick_close_price[-2]) / orderbook.tick_close_price[-2] #TODO debug
+            orderbook.returns[-1] = (mid_price - orderbook.tick_close_price[-2]) / orderbook.tick_close_price[-2]
             chartist_component = np.cumsum(orderbook.returns[:-len(orderbook.returns) - 1:-1]
                                            ) / np.arange(1., float(len(orderbook.returns) + 1))
 
