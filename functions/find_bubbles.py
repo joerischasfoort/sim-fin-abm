@@ -465,10 +465,10 @@ def sim_bubble_info(seed):
             # determine characteristics of the agents
             risk_aversions = [x.par.risk_aversion for x in traders]
             horizons = [x.par.horizon for x in traders]
-            learning_abilities = [x.par.learning_ability for x in traders]
-            chartist_expectations = [list(np.array(x.var.weight_chartist)[BURN_IN + start_dates[l]: BURN_IN + end_dates[l]] * x.var.forecast_adjust) for x in traders]
-            fundamentalist_expectations = [list(np.array(x.var.weight_fundamentalist)[BURN_IN + start_dates[l]: BURN_IN + end_dates[l]] * x.var.forecast_adjust) for x in
-                                         traders]
+            learning_abilities.append([x.par.learning_ability for x in traders])
+            chartist_expectations.append([list(np.array(x.var.weight_chartist)[BURN_IN + start_dates[l]: BURN_IN + end_dates[l]] * x.var.forecast_adjust) for x in traders])
+            fundamentalist_expectations.append([list(np.array(x.var.weight_fundamentalist)[BURN_IN + start_dates[l]: BURN_IN + end_dates[l]] * x.var.forecast_adjust) for x in
+                                         traders])
 
             wealth_gini_over_time = []
             palma_over_time = []
